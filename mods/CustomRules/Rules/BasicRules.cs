@@ -10,6 +10,8 @@ internal static class BasicRules
     internal static Rule Gravity;
     internal static Rule PlayerSpeed;
     internal static Rule PermanentInvisibility;
+    internal static Rule DisableAbilitySpawning;
+    internal static Rule InfiniteRound;
 
     internal static void Register()
     {
@@ -23,5 +25,9 @@ internal static class BasicRules
             "Multiplies how fast players move (walking and in the air).");
         PermanentInvisibility = RuleRegistry.AddBool("PermanentInvisibility", "Permanent invisibility", false,
             "Every player is always invisible, as if the Invisibility ability never ended.");
+        DisableAbilitySpawning = RuleRegistry.AddBool("DisableAbilitySpawning", "Disable ability spawning", false,
+            "No ability pickups: none appear during the round, and players don't drop their ability when they die.");
+        InfiniteRound = RuleRegistry.AddBool("InfiniteRound", "Infinite round duration", false,
+            "No sudden death: the platforms never start falling, however long the round lasts.");
     }
 }

@@ -7,7 +7,7 @@ schemaVersion = "0.0.1"
 namespace = "caligola"
 name = "CustomRules"
 versionNumber = "1.0.0"
-description = "Custom match rules set by the lobby host: cooldowns, player size, gravity, speed, permanent invisibility. Every player in the lobby needs it."
+description = "Custom match rules set by the lobby host: cooldowns, player size, gravity, speed, permanent invisibility, no ability pickups, no sudden death. Every player in the lobby needs it."
 websiteUrl = ""
 containsNsfwContent = false
 

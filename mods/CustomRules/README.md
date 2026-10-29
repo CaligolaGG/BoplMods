@@ -18,6 +18,8 @@ In character select (local or online lobby), click **Custom rules** in the top-l
 | Gravity × | 0–5, players and objects | 1 |
 | Player speed × | 0.1–5 | 1 |
 | Permanent invisibility | on/off | off |
+| Disable ability spawning | on/off (no pickups during the round, none dropped on death) | off |
+| Infinite round duration | on/off (no sudden death: platforms never fall) | off |
 
 ## Notes
 
