@@ -1,0 +1,21 @@
+# Changelog
+
+## 1.4.0
+- Pinball interacts with other abilities like the grenade: it stays on the grenade's "item" layer (Gust, Black hole, Magnet gun, explosions, water...).
+- Fix: Duplicator copies of a Pinball keep their spread direction, speed and remaining lifetime instead of all flying straight up.
+- Player hits are detected by the ball itself (like the grenade), so a Magnet gun holding it doesn't get hit by it.
+
+## 1.3.0
+- Pinball is now thrown by hand like the Grenade (instead of shot like the Bow); the ball grows in the slime's hand while you charge.
+- Pinball duration no longer depends on the charge (removed `DurationAtMinCharge`).
+
+## 1.2.0
+- Dev tool: right-click a CaliSkills skill in the ability grid to edit its settings in game (applies from the next round, until the game restarts).
+
+## 1.1.0
+- Pinball: speed, size, knockback and duration scale with how long you charge the shot.
+- Pinball: players stuck to a floor, wall or ceiling are detached and knocked away from it.
+- The all-abilities grid in character select scrolls when it doesn't fit on screen (mouse wheel, or follows the keyboard/gamepad selection).
+
+## 1.0.0
+- New skill: Pinball.

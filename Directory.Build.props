@@ -1,0 +1,63 @@
+<Project>
+  <!--
+    Shared settings for every mod under mods/.
+    Machine-specific paths can be overridden in Directory.Build.user.props (git-ignored),
+    see Directory.Build.user.props.example.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.user.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.user.props')" />
+
+  <PropertyGroup>
+    <!-- Your Thunderstore team name (namespace). Must match the team you upload with. -->
+    <ThunderstoreTeam Condition="'$(ThunderstoreTeam)' == ''">caligola</ThunderstoreTeam>
+
+    <!-- Where Bopl Battle is installed. -->
+    <BoplGameDir Condition="'$(BoplGameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Bopl Battle</BoplGameDir>
+    <BoplManagedDir>$(BoplGameDir)\BoplBattle_Data\Managed</BoplManagedDir>
+
+    <!-- Thunderstore Mod Manager / r2modman profile the build deploys into. -->
+    <BoplProfileDir Condition="'$(BoplProfileDir)' == ''">$(APPDATA)\Thunderstore Mod Manager\DataFolder\BoplBattle\profiles\Default</BoplProfileDir>
+    <!-- Set to false to only build, without copying into the profile. -->
+    <DeployToProfile Condition="'$(DeployToProfile)' == ''">true</DeployToProfile>
+
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Unity 2022.3 Mono supports .NET Standard 2.1 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
+    <!-- Lets you access private/internal game members directly, as if they were public. -->
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.*" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Game assemblies: referenced from the local install, never copied to output. -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp" Publicize="true">
+      <HintPath>$(BoplManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(BoplManagedDir)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Most settings (framework, references, deploy, packaging) come from ../../Directory.Build.props/.targets -->
+  <PropertyGroup>
+    <AssemblyName>SpawnBot</AssemblyName>
+    <RootNamespace>SpawnBot</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Dev tool: a SpawnBot ability that spawns idle bot players to test offensive abilities on.</Description>
+
+    <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
+    <BepInExPluginGuid>com.boplmods.spawnbot</BepInExPluginGuid>
+    <BepInExPluginName>SpawnBot</BepInExPluginName>
+  </PropertyGroup>
+</Project>

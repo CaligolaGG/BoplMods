@@ -1,0 +1,11 @@
+bin/
+obj/
+dist/
+.vs/
+.idea/
+*.user
+Directory.Build.user.props
+
+# Local tooling and decompiled game code (never commit or redistribute game code)
+tools/
+decompiled/

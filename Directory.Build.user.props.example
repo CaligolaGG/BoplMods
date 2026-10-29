@@ -1,0 +1,9 @@
+<Project>
+  <!-- Copy to Directory.Build.user.props and edit. That file is git-ignored. -->
+  <PropertyGroup>
+    <ThunderstoreTeam>YourTeamName</ThunderstoreTeam>
+    <BoplGameDir>D:\SteamLibrary\steamapps\common\Bopl Battle</BoplGameDir>
+    <!-- r2modman uses %APPDATA%\r2modmanPlus-local\BoplBattle\profiles\<Name> -->
+    <BoplProfileDir>$(APPDATA)\Thunderstore Mod Manager\DataFolder\BoplBattle\profiles\Default</BoplProfileDir>
+  </PropertyGroup>
+</Project>

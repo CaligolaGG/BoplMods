@@ -1,0 +1,36 @@
+<Project>
+  <!--
+    After every build: copy the mod DLL into the mod manager profile so you can
+    just press "Start modded" in Thunderstore Mod Manager / r2modman.
+    The folder is named "<Team>-<Mod>-dev" so it never collides with a version
+    installed from Thunderstore.
+  -->
+  <Target Name="DeployToProfile" AfterTargets="Build" Condition="'$(DeployToProfile)' == 'true'">
+    <PropertyGroup>
+      <ModDeployDir>$(BoplProfileDir)\BepInEx\plugins\$(ThunderstoreTeam)-$(AssemblyName)-dev</ModDeployDir>
+    </PropertyGroup>
+    <Warning Condition="!Exists('$(BoplProfileDir)\BepInEx')"
+             Text="Mod manager profile not found at '$(BoplProfileDir)'. Set BoplProfileDir in Directory.Build.user.props or build with -p:DeployToProfile=false." />
+    <Copy Condition="Exists('$(BoplProfileDir)\BepInEx')"
+          SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb"
+          DestinationFolder="$(ModDeployDir)"
+          SkipUnchangedFiles="true" />
+    <Message Condition="Exists('$(BoplProfileDir)\BepInEx')" Importance="high"
+             Text="$(AssemblyName) -> deployed to $(ModDeployDir)" />
+  </Target>
+
+  <!--
+    dotnet build -c Release -t:PackThunderstore
+    Builds a Thunderstore-ready zip into dist/ using tcli and the mod's thunderstore.toml.
+    The package version comes from <Version> in the .csproj, so it only lives in one place.
+  -->
+  <Target Name="PackThunderstore" DependsOnTargets="Build">
+    <PropertyGroup>
+      <TcliExe Condition="'$(TcliExe)' == '' And Exists('$(USERPROFILE)\.dotnet\tools\tcli.exe')">&quot;$(USERPROFILE)\.dotnet\tools\tcli.exe&quot;</TcliExe>
+      <TcliExe Condition="'$(TcliExe)' == ''">tcli</TcliExe>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\thunderstore.toml')" Text="No thunderstore.toml next to $(MSBuildProjectFile)." />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+          Command="$(TcliExe) build --config-path thunderstore.toml --package-namespace $(ThunderstoreTeam) --package-version $(Version)" />
+  </Target>
+</Project>

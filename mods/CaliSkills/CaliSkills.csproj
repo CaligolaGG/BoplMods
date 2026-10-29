@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Most settings (framework, references, deploy, packaging) come from ../../Directory.Build.props/.targets -->
+  <PropertyGroup>
+    <AssemblyName>CaliSkills</AssemblyName>
+    <RootNamespace>CaliSkills</RootNamespace>
+    <Version>1.4.0</Version>
+    <Description>A pack of new abilities for Bopl Battle. First skill: Pinball.</Description>
+
+    <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
+    <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>
+    <BepInExPluginName>CaliSkills</BepInExPluginName>
+  </PropertyGroup>
+
+  <!-- Extra game assemblies: scrollable ability grid (UI + mouse wheel), in-game settings editor (IMGUI, EventSystem). -->
+  <ItemGroup>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(BoplManagedDir)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(BoplManagedDir)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
