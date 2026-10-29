@@ -66,6 +66,7 @@ internal sealed class PinballSkill : Skill
 
         _pinballAbility.Cooldown = (Fix)PinballSettings.AbilityCooldown;
         _ballPrefab.gravityScale = (Fix)PinballSettings.BallGravity;
+        _ballPrefab.bounciness = (Fix)PinballSettings.BouncePower;
         _ballPrefab.GetComponent<DPhysicsCircle>().radius = (Fix)PinballSettings.BallSize;
 
         if (!Mathf.Approximately(_ballSpriteSize, PinballSettings.BallSize))
@@ -112,12 +113,11 @@ internal sealed class PinballSkill : Skill
             ball.gameObject.AddComponent<SpriteRenderer>();
 
         // Keep the grenade's "item" layer: other abilities recognise items by layer. Player hits: PinballBall.OnCollide.
-        ball.bounciness = Fix.One;
         ball.friction = Fix.Zero;
         ball.dynamicFriction = Fix.Zero;
         ball.airFriction01 = Fix.One;
         ball.transform.localScale = Vector3.one;
-        // Gravity, radius and sprite: see ApplyBakedSettings.
+        // Bounciness, gravity, radius and sprite: see ApplyBakedSettings.
 
         ball.gameObject.AddComponent<PinballBall>();
         return ball;

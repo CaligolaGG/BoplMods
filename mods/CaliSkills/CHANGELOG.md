@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.0
+- Pinball: new `BouncePower` setting (default 1, same behaviour as before): multiplies the ball's bounce off surfaces, items and players (<1 weaker, >1 stronger).
+
 ## 1.4.0
 - Pinball interacts with other abilities like the grenade: it stays on the grenade's "item" layer (Gust, Black hole, Magnet gun, explosions, water...).
 - Fix: Duplicator copies of a Pinball keep their spread direction, speed and remaining lifetime instead of all flying straight up.

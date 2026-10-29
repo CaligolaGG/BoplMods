@@ -155,7 +155,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
         {
             Vec2 v = Velocity;
             Vec2 reflected = v - normal * ((Fix)2L * Vec2.Dot(v, normal));
-            _body.velocity = Vec2.NormalizedSafe(reflected) * Speed;
+            _body.velocity = Vec2.NormalizedSafe(reflected) * Speed * (Fix)PinballSettings.BouncePower;
         }
 
         AudioManager.Get().Play("rockBounce");

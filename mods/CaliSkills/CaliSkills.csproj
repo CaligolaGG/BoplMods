@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <Description>A pack of new abilities for Bopl Battle. First skill: Pinball.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
