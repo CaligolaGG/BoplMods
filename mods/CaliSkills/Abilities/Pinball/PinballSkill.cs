@@ -18,6 +18,9 @@ internal sealed class PinballSkill : Skill
     private float _ballSpriteSize = -1f;
     private float _dummySpriteSize = -1f;
 
+    /// <summary>The registered instance (set when its prefab is created).</summary>
+    internal static PinballSkill Instance { get; private set; }
+
     public override string Name => "Pinball";
 
     // It knocks players back but never kills them.
@@ -25,7 +28,7 @@ internal sealed class PinballSkill : Skill
 
     public override System.Type SettingsType => typeof(PinballSettings);
 
-    // Everything else is read live by PinballBall / PinballHitPatch. Abilities are instantiated from the
+    // Everything else is read live by PinballBall / PinballKnock. Abilities are instantiated from the
     // prefab at the start of every round, so changes apply from the next round.
     public override void OnSettingsChanged() => ApplyBakedSettings();
 
@@ -55,7 +58,26 @@ internal sealed class PinballSkill : Skill
         _handDummy = thrower.transform.GetChild(1).GetComponentInChildren<SpriteRenderer>(includeInactive: true);
 
         ApplyBakedSettings();
+        Instance = this;
         return pinball;
+    }
+
+    /// <summary>
+    /// Spawns a fully charged ball that belongs to nobody (hits every player) and launches it at the full-charge
+    /// speed × <paramref name="speedMultiplier"/> (also used for its bounces off players).
+    /// Sim code only (deterministic). Returns null if the prefab doesn't exist yet.
+    /// </summary>
+    internal PinballBall SpawnBall(Vec2 position, Vec2 direction, Fix speedMultiplier)
+    {
+        if (_ballPrefab == null)
+            return null;
+
+        BoplBody body = FixTransform.InstantiateFixed(_ballPrefab, position, Fix.Zero);
+        body.GetComponent<Item>().OwnerId = -1;
+        body.GetComponent<Grenade>().Initialize(null);
+        PinballBall ball = body.GetComponent<PinballBall>();
+        ball.LaunchStandalone(direction, Fix.One, speedMultiplier);
+        return ball;
     }
 
     /// <summary>Settings stored on the prefabs rather than read at runtime.</summary>

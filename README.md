@@ -49,7 +49,9 @@ dotnet build mods/TripleJump -c Release -t:PackThunderstore
 | Mod | Description |
 |---|---|
 | [TripleJump](mods/TripleJump/README.md) | Up to 2 extra jumps in mid-air (configurable). |
-| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a bow-shot ball that bounces for 10 s and knocks players back. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
+| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a thrown ball that bounces for 10 s and knocks players back. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
+| [CustomRules](mods/CustomRules/README.md) | Host-set match rules (cooldowns, player size, gravity, speed, permanent invisibility) from a "Custom rules" window in character select. Other mods can add rules. |
+| [CaliGameModes](mods/CaliGameModes/README.md) | Game modes in the CustomRules window (needs CustomRules + CaliSkills). Pinball mode: pinballs shot from the screen sides. |
 | [SpawnBot](mods/SpawnBot/README.md) | Dev tool: a SpawnBot ability that spawns idle bot players to test offensive abilities on (local games only). |
 
 Reference: [docs/ABILITIES.md](docs/ABILITIES.md) lists the game's abilities and their IDs.

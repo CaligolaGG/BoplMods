@@ -2,6 +2,8 @@
 
 ## 1.5.0
 - Pinball: new `BouncePower` setting (default 1, same behaviour as before): multiplies the ball's bounce off surfaces, items and players (<1 weaker, >1 stronger).
+- Support for CaliGameModes (spawning standalone pinballs).
+- Fix: a slime hit by a Pinball while spawning or reviving no longer gets stuck in the spawn animation (spawning slimes are ignored).
 
 ## 1.4.0
 - Pinball interacts with other abilities like the grenade: it stays on the grenade's "item" layer (Gust, Black hole, Magnet gun, explosions, water...).

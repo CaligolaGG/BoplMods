@@ -28,13 +28,14 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
     [SerializeField] private Fix _baseScale = -Fix.One;
     [SerializeField] private Fix _charge;
     [SerializeField] private Fix _ageSinceThrow;
+    [SerializeField] private Fix _speedMultiplier = Fix.One;
     private readonly Dictionary<int, Fix> _lastHitTimeByPlayer = new();
 
     internal Vec2 Velocity => _body.HasBeenInitialized ? _body.velocity : _body.StartVelocity;
 
     internal Vec2 Position => _body.position;
 
-    private Fix Speed => (Fix)PinballSettings.BallSpeed * ChargeScale(PinballSettings.SpeedAtMinCharge, _charge);
+    private Fix Speed => (Fix)PinballSettings.BallSpeed * ChargeScale(PinballSettings.SpeedAtMinCharge, _charge) * _speedMultiplier;
 
     private Fix Knockback => (Fix)PinballSettings.BallKnockback * ChargeScale(PinballSettings.KnockbackAtMinCharge, _charge);
 
@@ -110,6 +111,17 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
         _thrown = true;
     }
 
+    /// <summary>For balls spawned without a thrower (e.g. CaliGameModes' Pinball mode): release and launch right away.</summary>
+    internal void LaunchStandalone(Vec2 dir, Fix charge, Fix speedMultiplier)
+    {
+        _charge = charge;
+        _speedMultiplier = speedMultiplier;
+        _baseScale = _body.Scale;
+        GetComponent<DPhysicsCircle>().ManualInit();
+        _grenade.hasBeenThrown = true;
+        Launch(Vec2.NormalizedSafe(dir));
+    }
+
     public void OnCollide(CollisionInformation collision)
     {
         if (!_thrown || collision.layer != LayerMask.NameToLayer("Player"))
@@ -136,6 +148,12 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
 
         PlayerCollision playerCollision = other.GetComponent<PlayerCollision>();
         if (playerCollision != null && playerCollision.IsInvulnerable)
+            return;
+
+        // Spawning / reviving slime: its spawn animation ends by calling Spawn(), which gives back control.
+        // A ragdoll would replace that animation and leave the slime stuck forever.
+        SlimeController slime = other.GetComponent<SlimeController>();
+        if (slime != null && !slime.hasSpawned)
             return;
 
         if (!TryRegisterHit(victimId))

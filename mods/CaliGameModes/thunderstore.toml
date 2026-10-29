@@ -1,0 +1,37 @@
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+# namespace and versionNumber are overridden at pack time from Directory.Build.props
+# (ThunderstoreTeam) and the .csproj (<Version>), see the PackThunderstore target.
+namespace = "caligola"
+name = "CaliGameModes"
+versionNumber = "1.0.0"
+description = "Game modes set by the lobby host in the CustomRules menu. Pinball mode: pinballs are shot into the arena from the sides. Every player in the lobby needs it."
+websiteUrl = ""
+containsNsfwContent = false
+
+[package.dependencies]
+BepInEx-BepInExPack = "5.4.2305"
+caligola-CustomRules = "1.0.0"
+caligola-CaliSkills = "1.5.0"
+
+[build]
+icon = "./icon.png"
+readme = "./README.md"
+outdir = "../../dist"
+
+[[build.copy]]
+source = "./bin/Release/netstandard2.1/CaliGameModes.dll"
+target = "CaliGameModes.dll"
+
+[[build.copy]]
+source = "./CHANGELOG.md"
+target = "CHANGELOG.md"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["bopl-battle"]
+
+[publish.categories]
+bopl-battle = ["mods"]

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Most settings (framework, references, deploy, packaging) come from ../../Directory.Build.props/.targets -->
+  <PropertyGroup>
+    <AssemblyName>CaliGameModes</AssemblyName>
+    <RootNamespace>CaliGameModes</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. First mode: Pinball mode.</Description>
+
+    <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
+    <BepInExPluginGuid>com.caligola.caligamemodes</BepInExPluginGuid>
+    <BepInExPluginName>CaliGameModes</BepInExPluginName>
+  </PropertyGroup>
+
+  <!-- The mods this one builds on: installed separately (Thunderstore dependencies), so not copied with it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\CustomRules\CustomRules.csproj" Private="false" />
+    <ProjectReference Include="..\CaliSkills\CaliSkills.csproj" Private="false" />
+  </ItemGroup>
+</Project>

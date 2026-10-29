@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Most settings (framework, references, deploy, packaging) come from ../../Directory.Build.props/.targets -->
+  <PropertyGroup>
+    <AssemblyName>CustomRules</AssemblyName>
+    <RootNamespace>CustomRules</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Custom match rules set by the lobby host: cooldowns, player size, gravity, speed, permanent invisibility.</Description>
+
+    <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
+    <BepInExPluginGuid>com.caligola.customrules</BepInExPluginGuid>
+    <BepInExPluginName>CustomRules</BepInExPluginName>
+  </PropertyGroup>
+
+  <!-- Extra game assemblies: rules menu (IMGUI, EventSystem, keyboard), host -> clients sync (Steam P2P). -->
+  <ItemGroup>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(BoplManagedDir)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(BoplManagedDir)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>$(BoplManagedDir)\Facepunch.Steamworks.Win64.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
