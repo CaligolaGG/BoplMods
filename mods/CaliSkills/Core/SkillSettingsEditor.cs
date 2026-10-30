@@ -112,7 +112,7 @@ internal sealed class SkillSettingsEditor : MonoBehaviour
 
         if (_backdrop == null)
         {
-            _backdrop = new Texture2D(1, 1);
+            _backdrop = new Texture2D(1, 1) { hideFlags = HideFlags.DontUnloadUnusedAsset };
             _backdrop.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
             _backdrop.Apply();
         }

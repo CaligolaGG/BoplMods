@@ -10,7 +10,11 @@ internal static class IconFactory
         int w = Mathf.Max(16, Mathf.RoundToInt(reference.rect.width));
         int h = Mathf.Max(16, Mathf.RoundToInt(reference.rect.height));
 
-        var tex = new Texture2D(w, h, TextureFormat.RGBA32, mipChain: false) { filterMode = FilterMode.Bilinear };
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, mipChain: false)
+        {
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.DontUnloadUnusedAsset, // survive scene loads (Resources.UnloadUnusedAssets)
+        };
         var pixels = new Color32[w * h];
 
         var outline = new Color32(30, 30, 40, 255);

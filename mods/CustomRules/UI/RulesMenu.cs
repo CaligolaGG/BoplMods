@@ -60,6 +60,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
         LoadTexts();
         _message = _readOnly && RulesSync.HostValues == null ? "The host's rules haven't arrived yet." : null;
         _tab = 0;
+        _picking = null;
         ResetProfilesTab();
         _scroll = Vector2.zero;
         _window = default;
@@ -89,7 +90,12 @@ internal sealed partial class RulesMenu : MonoBehaviour
     {
         if (!_open)
             return;
-        if (!InLobbyScene || (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
+        bool escape = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+        if (!InLobbyScene)
+            Close();
+        else if (escape && _picking != null)
+            _picking = null; // Esc closes the ability picker first
+        else if (escape)
             Close();
     }
 
@@ -113,7 +119,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
 
         if (_backdrop == null)
         {
-            _backdrop = new Texture2D(1, 1);
+            _backdrop = new Texture2D(1, 1) { hideFlags = HideFlags.DontUnloadUnusedAsset };
             _backdrop.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
             _backdrop.Apply();
         }
@@ -124,7 +130,11 @@ internal sealed partial class RulesMenu : MonoBehaviour
             float h = Mathf.Min(height - 40f, 200f + RuleRegistry.Rules.Count * 64f + RuleRegistry.Sections.Count * 60f);
             _window = new Rect((width - WindowWidth) / 2f, (height - h) / 2f, WindowWidth, h);
         }
-        _window = GUI.ModalWindow(WindowId, _window, DrawWindow, _readOnly ? "Custom rules (set by the host)" : "Custom rules");
+        // Only one modal window at a time: the option picker replaces the rules window while it's open.
+        if (_picking != null)
+            DrawPickerWindow(width, height);
+        else
+            _window = GUI.ModalWindow(WindowId, _window, DrawWindow, _readOnly ? "Custom rules (set by the host)" : "Custom rules");
     }
 
     private void DrawWindow(int id)
@@ -223,15 +233,29 @@ internal sealed partial class RulesMenu : MonoBehaviour
         GUILayout.Label(rule.Label, GUILayout.Width(200f - indent));
 
         GUI.enabled = !_readOnly;
-        if (rule.Type == RuleType.Bool)
-            _texts[rule] = GUILayout.Toggle(_texts[rule] == bool.TrueString, "") ? bool.TrueString : bool.FalseString;
-        else
-            _texts[rule] = GUILayout.TextField(_texts[rule], GUILayout.Width(90f));
+        switch (rule.Type)
+        {
+            case RuleType.Bool:
+                bool wasOn = _texts[rule] == bool.TrueString;
+                bool on = GUILayout.Toggle(wasOn, "");
+                _texts[rule] = on ? bool.TrueString : bool.FalseString;
+                // Exclusive pair: turning this one on turns the other off.
+                if (on && !wasOn && rule.ExclusiveWith != null)
+                    _texts[rule.ExclusiveWith] = bool.FalseString;
+                break;
+            case RuleType.Choice:
+                DrawChoice(rule);
+                break;
+            default:
+                _texts[rule] = GUILayout.TextField(_texts[rule], GUILayout.Width(90f));
+                break;
+        }
         GUI.enabled = true;
 
-        GUILayout.Label(rule.Type == RuleType.Bool
-            ? $"default {rule.DefaultText}"
-            : $"default {rule.DefaultText}  ({Rule.Format(rule.Min)}–{Rule.Format(rule.Max)})");
+        if (rule.Type != RuleType.Choice)
+            GUILayout.Label(rule.Type == RuleType.Bool
+                ? $"default {rule.DefaultText}"
+                : $"default {rule.DefaultText}  ({Rule.Format(rule.Min)}–{Rule.Format(rule.Max)})");
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
@@ -258,11 +282,17 @@ internal sealed partial class RulesMenu : MonoBehaviour
     {
         get
         {
-            if (_ruleFrameStyle != null)
+            // The texture is only referenced through the GUIStyle, which Resources.UnloadUnusedAssets (run on scene
+            // loads, e.g. leaving a lobby) doesn't see: keep it explicitly, and rebuild if it's gone anyway.
+            if (_ruleFrameStyle != null && _ruleFrameStyle.normal.background != null)
                 return _ruleFrameStyle;
 
             const int size = 32, radius = 8;
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false) { filterMode = FilterMode.Bilinear };
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false)
+            {
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.DontUnloadUnusedAsset,
+            };
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)

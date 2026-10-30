@@ -53,6 +53,30 @@ public static class RuleRegistry
         Add(key, label, description, RuleType.Bool, defaultValue, 0f, 1f, parent, section);
 
     /// <summary>
+    /// A rule that picks one name from <paramref name="options"/> (asked each time the menu draws, so the list can come
+    /// from the game, e.g. ability names). The value is the name, or "" for none (shown as <paramref name="noneLabel"/>).
+    /// With <paramref name="icon"/> (name → sprite, null if none) the menu shows pictures and picks from a grid.
+    /// </summary>
+    public static Rule AddChoice(string key, string label, Func<IReadOnlyList<string>> options, string noneLabel,
+        string description, Rule parent = null, RuleSection section = null, Func<string, Sprite> icon = null)
+    {
+        Rule rule = Add(key, label, description, RuleType.Choice, "", 0f, 0f, parent, section);
+        rule.Options = options;
+        rule.NoneLabel = noneLabel;
+        rule.OptionIcon = icon;
+        return rule;
+    }
+
+    /// <summary>Two bool rules that can't both be on: turning one on in the menu turns the other off.</summary>
+    public static void MakeExclusive(Rule a, Rule b)
+    {
+        if (a.Type != RuleType.Bool || b.Type != RuleType.Bool)
+            throw new ArgumentException("Only bool rules can be exclusive.");
+        a.ExclusiveWith = b;
+        b.ExclusiveWith = a;
+    }
+
+    /// <summary>
     /// A value that isn't shown in the menu but is sent from the host with the rules, e.g. a skill's tuning so every
     /// player uses the host's. <paramref name="readLocal"/> gives this machine's value as text (invariant culture);
     /// <paramref name="applyActive"/> is called with the host's value at match start (also on the host itself).
@@ -80,6 +104,7 @@ public static class RuleRegistry
                 new ConfigDescription(description, new AcceptableValueRange<float>(min, max))),
             RuleType.Int => Plugin.RulesConfig.Bind("Rules", key, (int)defaultValue,
                 new ConfigDescription(description, new AcceptableValueRange<int>((int)min, (int)max))),
+            RuleType.Choice => Plugin.RulesConfig.Bind("Rules", key, (string)defaultValue, description),
             _ => Plugin.RulesConfig.Bind("Rules", key, (bool)defaultValue, description),
         };
 

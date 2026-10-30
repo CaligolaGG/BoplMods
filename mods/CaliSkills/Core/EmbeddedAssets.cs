@@ -61,11 +61,14 @@ internal static class EmbeddedAssets
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, mipChain: false) { filterMode = FilterMode.Bilinear };
         tex.SetPixels(pixels);
         tex.Apply();
+        // Runtime assets: scene loads (Resources.UnloadUnusedAssets) must not destroy them.
+        tex.hideFlags = HideFlags.DontUnloadUnusedAsset;
         UnityEngine.Object.Destroy(source);
 
         Vector2 pivot = new Vector2(reference.pivot.x / reference.rect.width, reference.pivot.y / reference.rect.height);
         Sprite sprite = Sprite.Create(tex, new Rect(0, 0, w, h), pivot, reference.pixelsPerUnit);
         sprite.name = Path.GetFileNameWithoutExtension(fileName);
+        sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
         return sprite;
     }
 
@@ -102,6 +105,7 @@ internal static class EmbeddedAssets
 
         AudioClip clip = AudioClip.Create(Path.GetFileNameWithoutExtension(fileName), samples / channels, channels, sampleRate, stream: false);
         clip.SetData(data, 0);
+        clip.hideFlags = HideFlags.DontUnloadUnusedAsset;
         return clip;
     }
 }

@@ -4,7 +4,7 @@
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
     <Version>1.5.0</Version>
-    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru.</Description>
+    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>
@@ -32,6 +32,11 @@
     <!-- Embedded assets: PNG icons (ImageConversion), WAV sounds (AudioClip/AudioSource). -->
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>$(BoplManagedDir)\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Nothing Personal Kid's marker: a copy of the Teleport ability's particle portal. -->
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.ParticleSystemModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.AudioModule">

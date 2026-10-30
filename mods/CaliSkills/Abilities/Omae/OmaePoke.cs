@@ -8,8 +8,8 @@ namespace CaliSkills.Abilities.Omae;
 
 /// <summary>
 /// The poke: when an Omae ability (a ThrowItem2 with an <see cref="OmaeCone"/>) does its throw motion, every other
-/// player whose body touches the cone in front of the slime gets marked. Runs in the simulation (Fire is called from
-/// ThrowItem2.UpdateSim), using Fix math only.
+/// player whose body touches the cone in front of the slime, with no platform in between, gets marked. Runs in the
+/// simulation (Fire is called from ThrowItem2.UpdateSim), using Fix math only.
 /// </summary>
 [HarmonyPatch(typeof(ThrowItem2), nameof(ThrowItem2.Fire))]
 internal static class OmaePoke
@@ -44,7 +44,8 @@ internal static class OmaePoke
                 continue;
 
             Fix radius = target.physics != null ? target.physics.radius : player.Scale;
-            if (InCone(target.body.position - origin, dir, range, cosHalf, radius))
+            Vec2 targetPos = target.body.position;
+            if (InCone(targetPos - origin, dir, range, cosHalf, radius) && InLineOfSight(origin, targetPos, radius))
                 hit.Add(id);
         }
 
@@ -53,6 +54,27 @@ internal static class OmaePoke
 
         if (hit.Count > 0)
             SoundPlayer.Play(OmaeSkill.Sound, OmaeSettings.SoundVolume);
+    }
+
+    /// <summary>
+    /// Whether no platform stands between the poker and the target: a ray to the target's center or to either side of it
+    /// (most of its radius out) must reach it without hitting a platform first.
+    /// </summary>
+    private static bool InLineOfSight(Vec2 origin, Vec2 target, Fix radius)
+    {
+        Vec2 toTarget = target - origin;
+        Vec2 side = Vec2.NormalizedSafe(new Vec2(-toTarget.y, toTarget.x)) * (radius * (Fix)0.8f);
+        foreach (Vec2 point in new[] { target, target + side, target - side })
+        {
+            Vec2 ray = point - origin;
+            Fix distance = Vec2.Magnitude(ray);
+            if (distance <= Fix.Zero)
+                return true;
+            RaycastInformation platform = DetPhysics.Get().RaycastToClosestRoundedRect(origin, ray / distance, distance);
+            if (!platform || platform.nearDist >= distance)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Whether a circle at <paramref name="offset"/> from the apex touches the cone (approximation at the edges).</summary>

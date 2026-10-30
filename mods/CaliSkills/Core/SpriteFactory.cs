@@ -36,9 +36,12 @@ internal static class SpriteFactory
         }
         tex.SetPixels32(pixels);
         tex.Apply();
+        // Runtime assets: scene loads (Resources.UnloadUnusedAssets) must not destroy them.
+        tex.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
         Sprite sprite = Sprite.Create(tex, new Rect(0, 0, w, h), pivot, pixelsPerUnit);
         sprite.name = name;
+        sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
         return sprite;
     }
 

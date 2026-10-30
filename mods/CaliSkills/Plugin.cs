@@ -1,7 +1,9 @@
 using BepInEx;
 using BepInEx.Logging;
+using CaliSkills.Abilities.NothingPersonal;
 using CaliSkills.Abilities.Omae;
 using CaliSkills.Abilities.Pinball;
+using CaliSkills.Abilities.Run;
 using CaliSkills.Core;
 using HarmonyLib;
 
@@ -20,6 +22,8 @@ public class Plugin : BaseUnityPlugin
         // Every skill of the pack is declared here, in the order it's appended to the ability grid.
         SkillRegistry.Add(new PinballSkill());
         SkillRegistry.Add(new OmaeSkill());
+        SkillRegistry.Add(new RunSkill());
+        SkillRegistry.Add(new NothingPersonalSkill());
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
         new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll(typeof(Plugin).Assembly);

@@ -1,7 +1,10 @@
 # Changelog
 
 ## 1.5.0
-- New skill: Omae wa mo shindeiru. Aim a poke (red cone), players hit are marked (flashing faster and stronger as time runs out) and die after 20 s; poking a marked player takes 5 s off. Own icon, and plays "Omae wa mou shindeiru" when a poke marks someone.
+- New skill: Omae wa mo shindeiru. Aim a poke (red cone, blocked by platforms), players hit are marked (flashing faster and stronger as time runs out) and die after 20 s; poking a marked player takes 5 s off. Own icon, and plays "Omae wa mou shindeiru" when a poke marks someone.
+- New skill: Nothing Personal Kid. Teleport behind the furthest player, Teleport-style (portal, light beam, smoke cloud, 0.1 s travel), then 0.3 s immune and unable to use other abilities. 10 s cooldown.
+- New skill: Run. Hold to be 20% faster; the 3 s cooldown starts on release; using another ability ends the run.
+- Runtime textures, sprites and sounds survive scene changes.
 - Pinball: new `BouncePower` setting (default 1, same behaviour as before): multiplies the ball's bounce off surfaces, items and players (<1 weaker, >1 stronger).
 - Support for CaliGameModes (spawning standalone pinballs).
 - Fix: a slime hit by a Pinball while spawning or reviving no longer gets stuck in the spawn animation (spawning slimes are ignored).

@@ -19,6 +19,12 @@ internal static class PlayerBouncingRule
     /// <summary>Two slimes that touch always separate at least this fast (× BouncePower), so a slow touch still bounces.</summary>
     internal static readonly Fix MinBounceSpeed = (Fix)15L;
 
+    /// <summary>
+    /// Slimes hitting each other at least this fast (closing speed, about a full-speed run) knock a slime stuck to a
+    /// platform off it, instead of just making it slide.
+    /// </summary>
+    internal static readonly Fix DetachImpactSpeed = (Fix)18L;
+
     private static void Postfix()
     {
         if (BasicRules.PlayerBouncing.IsOn)
@@ -27,9 +33,13 @@ internal static class PlayerBouncingRule
 
     internal static Fix BouncePower => BasicRules.BouncePower.ActiveFix;
 
-    /// <summary>Gives a slime a velocity change, whether it's in the air or stuck to a platform.</summary>
-    internal static void AddVelocity(SlimeController slime, Vec2 delta)
+    /// <summary>
+    /// Gives a slime a velocity change, whether it's in the air or stuck to a platform. A <paramref name="hardHit"/>
+    /// always knocks a stuck slime off its platform (the part of the push going into the platform bounces back out).
+    /// </summary>
+    internal static void AddVelocity(SlimeController slime, Vec2 change, bool hardHit)
     {
+        Vec2 delta = change;
         PlayerPhysics physics = slime.playerPhysics;
         PlayerBody body = slime.body;
         StickyRoundedRectangle ground = physics.IsGrounded() ? physics.getAttachedGround() : null;
@@ -41,11 +51,16 @@ internal static class PlayerBouncingRule
 
         Vec2 normal = Vec2.NormalizedSafe(ground.currentNormal(body));
         var tangent = new Vec2(normal.y, -normal.x);
-        if (Vec2.Dot(delta, normal) <= Fix.Zero)
+        Fix intoPlatform = Vec2.Dot(delta, normal);
+        if (intoPlatform <= Fix.Zero)
         {
-            // Pushed into the platform: slide along it.
-            physics.groundedSpeed += Vec2.Dot(delta, tangent);
-            return;
+            if (!hardHit)
+            {
+                // Gently pushed into the platform: slide along it.
+                physics.groundedSpeed += Vec2.Dot(delta, tangent);
+                return;
+            }
+            delta -= normal * ((Fix)2L * intoPlatform);
         }
 
         // Pushed away from the platform: leave it, keeping the speed it had along it.
@@ -108,8 +123,9 @@ internal sealed class PlayerBouncer : MonoUpdatable
 
         // Equal masses: each slime takes half of the change.
         Vec2 half = normal * ((separation - approach) / (Fix)2L);
-        PlayerBouncingRule.AddVelocity(a, -half);
-        PlayerBouncingRule.AddVelocity(b, half);
+        bool hardHit = -approach >= PlayerBouncingRule.DetachImpactSpeed;
+        PlayerBouncingRule.AddVelocity(a, -half, hardHit);
+        PlayerBouncingRule.AddVelocity(b, half, hardHit);
 
         // Un-overlap the ones in the air (platforms hold the others in place).
         Vec2 push = normal * ((touching - distance) / (Fix)2L);

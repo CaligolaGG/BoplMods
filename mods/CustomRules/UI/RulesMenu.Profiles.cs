@@ -18,8 +18,24 @@ internal sealed partial class RulesMenu
     private string _confirmDelete;
     private Vector2 _profilesScroll;
     private GUIStyle _activeProfileStyle;
+    private GUIStyle _profileNameStyle;
     private bool _activeModified;
     private float _nextModifiedCheck;
+
+    /// <summary>The loaded profile's name: bold and bigger than the text around it.</summary>
+    private GUIStyle ProfileNameStyle
+    {
+        get
+        {
+            if (_profileNameStyle != null)
+                return _profileNameStyle;
+            // fontSize 0 means "the font's own size": take the base size from the font then.
+            int baseSize = GUI.skin.label.fontSize > 0 ? GUI.skin.label.fontSize
+                : GUI.skin.font != null && GUI.skin.font.fontSize > 0 ? GUI.skin.font.fontSize : 14;
+            _profileNameStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = baseSize + 5 };
+            return _profileNameStyle;
+        }
+    }
 
     private void ResetProfilesTab()
     {
@@ -44,9 +60,20 @@ internal sealed partial class RulesMenu
         }
         bool modified = _activeModified;
 
+        // Centered name, with its "Save to" button centered below when there are changes to save.
         GUILayout.BeginHorizontal();
-        GUILayout.Label($"Profile: {active}{(modified ? " (modified)" : "")}");
-        if (modified && GUILayout.Button($"Save to '{active}'", GUILayout.Width(200f)))
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(active, ProfileNameStyle, GUILayout.ExpandWidth(false));
+        if (modified)
+            GUILayout.Label("(modified)", GUILayout.ExpandWidth(false));
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+
+        if (!modified)
+            return;
+        GUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+        if (GUILayout.Button($"Save to '{active}'", GUILayout.Width(200f)))
             RunProfileAction(() =>
             {
                 if (!Apply())
@@ -54,6 +81,7 @@ internal sealed partial class RulesMenu
                 RuleProfiles.SaveCurrent(active);
                 return $"Saved the rules to '{active}'.";
             });
+        GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
     }
 
@@ -66,15 +94,26 @@ internal sealed partial class RulesMenu
 
         // Loaded profile.
         string active = RuleProfiles.Active;
+        // Centered name, with its Unload button centered below.
         GUILayout.BeginHorizontal();
-        GUILayout.Label(active == null ? "No profile loaded: your own rules." : $"Loaded profile: {active}", _activeProfileStyle);
-        if (active != null && GUILayout.Button("Unload", GUILayout.Width(110f)))
-            RunProfileAction(() =>
-            {
-                RuleProfiles.Unload();
-                return "Profile unloaded: your rules from before are back.";
-            });
+        GUILayout.FlexibleSpace();
+        GUILayout.Label(active ?? "No profile loaded: your own rules.", active != null ? ProfileNameStyle : _activeProfileStyle,
+            GUILayout.ExpandWidth(false));
+        GUILayout.FlexibleSpace();
         GUILayout.EndHorizontal();
+        if (active != null)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Unload", GUILayout.Width(110f)))
+                RunProfileAction(() =>
+                {
+                    RuleProfiles.Unload();
+                    return "Profile unloaded: your rules from before are back.";
+                });
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
 
         // Save the current rules as a new profile.
         GUILayout.Space(6f);

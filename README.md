@@ -50,8 +50,8 @@ build-all.cmd   # every mod -> dist/ (no deploy)
 
 | Mod | Description |
 |---|---|
-| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a thrown ball that bounces for 10 s and knocks players back. Omae wa mo shindeiru: an aimed poke that marks players, who die 20 s later. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
-| [CustomRules](mods/CustomRules/README.md) | Host-set match rules (cooldowns, player size, gravity, speed, permanent invisibility, no pickups, no sudden death, bouncy players, triple jump — formerly the TripleJump mod) from a "Custom rules" window in character select. Other mods can add rules. |
+| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a thrown ball that bounces for 10 s and knocks players back. Omae wa mo shindeiru: an aimed poke that marks players, who die 20 s later. Run: hold to run 20% faster. Nothing Personal Kid: teleport behind the furthest player. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
+| [CustomRules](mods/CustomRules/README.md) | Host-set match rules (cooldowns, player size, gravity, speed, permanent invisibility, no pickups, no sudden death, bouncy players, extra jump — formerly the TripleJump mod, offensive-ability filters, preselected abilities, game mode profiles) from a "Custom rules" window in character select. Other mods can add rules. |
 | [CaliGameModes](mods/CaliGameModes/README.md) | Game modes in the CustomRules window (needs CustomRules + CaliSkills). Pinball mode: pinballs shot from the screen sides. |
 | [SpawnBot](mods/SpawnBot/README.md) | Dev tool: a SpawnBot ability that spawns idle bot players to test offensive abilities on (local games only). |
 

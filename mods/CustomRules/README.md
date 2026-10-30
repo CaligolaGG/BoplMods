@@ -33,6 +33,9 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | Player bouncing mode | on/off: slimes bounce off each other instead of passing through | off |
 | ↳ Bounce on everything | on/off: slimes bounce off platforms instead of sticking; each bounce gives back one jump (press jump in the air) | off |
 | ↳ Bounce power × | 0–5 | 1 |
+| No offensive abilities | on/off: offensive abilities are greyed out and can't be picked (a ready player holding one is sent back to pick again, and the match can't start); Random (and pickups) only give non-offensive ones | off |
+| Only offensive abilities | on/off: the opposite (can't be on together with No offensive) | off |
+| **Preselect abilities** → Ability 1 / 2 / 3 | pick an ability (or Random) to force it on every player in that slot: ◀ ▶ step through them, click the icon to choose from a grid | Player's choice |
 | Extra Jump | on/off: jump again in mid-air (replaces the ExtraJump mod: uninstall it) | off |
 | ↳ Air jumps | 1–10 | 2 |
 

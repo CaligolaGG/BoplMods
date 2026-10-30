@@ -7,7 +7,7 @@ schemaVersion = "0.0.1"
 namespace = "caligola"
 name = "CaliSkills"
 versionNumber = "1.0.0"
-description = "A pack of new abilities. Pinball: throw a ball that bounces and knocks players back. Omae wa mo shindeiru: poke players to mark them, they die 20 seconds later. Every player in the lobby needs it."
+description = "A pack of new abilities. Pinball: throw a ball that bounces and knocks players back. Omae wa mo shindeiru: poke players to mark them, they die 20 seconds later. Run: hold to run faster. Nothing Personal Kid: teleport behind the furthest player. Every player in the lobby needs it."
 websiteUrl = ""
 containsNsfwContent = false
 

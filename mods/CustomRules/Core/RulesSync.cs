@@ -28,6 +28,21 @@ internal static class RulesSync
     /// <summary>The values last received from the lobby host, or null if none arrived yet.</summary>
     internal static IReadOnlyDictionary<string, string> HostValues => _hostValues;
 
+    /// <summary>
+    /// A rule's value as set in the lobby right now (before the match makes it active): the host's for online guests
+    /// (default until they arrive), this machine's otherwise. For lobby UI such as greying out abilities.
+    /// </summary>
+    internal static string LobbyText(Rule rule)
+    {
+        if (!IsOnlineClient)
+            return rule.LocalText;
+        return _hostValues != null && _hostValues.TryGetValue(rule.Key, out string text) && rule.TryParse(text, out object value)
+            ? Rule.Format(value)
+            : rule.DefaultText;
+    }
+
+    internal static bool LobbyBool(Rule rule) => LobbyText(rule) == bool.TrueString;
+
     internal static bool IsOnlineClient =>
         GameLobby.isOnlineGame && SteamManager.instance != null && !SteamManager.LocalPlayerIsLobbyOwner;
 

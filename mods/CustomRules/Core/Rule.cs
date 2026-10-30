@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using BepInEx.Configuration;
 using BoplFixedMath;
@@ -10,6 +11,9 @@ public enum RuleType
     Float,
     Int,
     Bool,
+
+    /// <summary>One of a list of names (e.g. an ability); "" = none of them (shown as the rule's NoneLabel).</summary>
+    Choice,
 }
 
 /// <summary>
@@ -61,6 +65,18 @@ public sealed class Rule
 
     internal ConfigEntryBase Entry { get; }
 
+    /// <summary>Choice rules: the names to pick from (asked when the menu draws, so they can come from the game).</summary>
+    internal Func<IReadOnlyList<string>> Options { get; set; }
+
+    /// <summary>Choice rules, optional: the picture of an option (shown in the menu like the game's ability picker).</summary>
+    internal Func<string, UnityEngine.Sprite> OptionIcon { get; set; }
+
+    /// <summary>Choice rules: how the "" value (no choice) is shown.</summary>
+    internal string NoneLabel { get; set; }
+
+    /// <summary>A bool rule that is turned off when this one is turned on in the menu (and the other way round).</summary>
+    internal Rule ExclusiveWith { get; set; }
+
     public string ActiveText { get; private set; }
 
     public float ActiveFloat { get; private set; }
@@ -101,7 +117,8 @@ public sealed class Rule
     /// <summary>Parses and clamps to [Min, Max].</summary>
     internal bool TryParse(string text, out object value)
     {
-        text = (text ?? "").Trim().Replace(',', '.');
+        if (Type != RuleType.Choice)
+            text = (text ?? "").Trim().Replace(',', '.');
         value = null;
         switch (Type)
         {
@@ -114,6 +131,10 @@ public sealed class Rule
                 break;
             case RuleType.Bool when bool.TryParse(text, out bool b):
                 value = b;
+                break;
+            case RuleType.Choice:
+                // Any name is kept: an unknown one (e.g. from a mod this player doesn't have) is ignored where used.
+                value = (text ?? "").Trim();
                 break;
         }
         return value != null;

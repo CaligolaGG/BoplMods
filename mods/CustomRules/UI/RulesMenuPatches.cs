@@ -4,7 +4,10 @@ using HarmonyLib;
 
 namespace CustomRules.UI;
 
-/// <summary>Creates the rules menu the first time a character select screen opens.</summary>
+/// <summary>
+/// Creates the rules menu the first time a character select screen opens, and extends the cooldown rule to modded
+/// abilities (all mods are loaded by then).
+/// </summary>
 [HarmonyPatch]
 internal static class CreateRulesMenuPatch
 {
@@ -14,7 +17,11 @@ internal static class CreateRulesMenuPatch
         yield return AccessTools.Method(typeof(CharacterSelectHandler_online), "Awake");
     }
 
-    private static void Postfix() => RulesMenu.EnsureCreated();
+    private static void Postfix()
+    {
+        RulesMenu.EnsureCreated();
+        Rules.CooldownRule.PatchModdedAbilities(Plugin.Harmony);
+    }
 }
 
 /// <summary>
