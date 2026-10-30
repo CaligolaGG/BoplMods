@@ -4,7 +4,7 @@
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
     <Version>1.5.0</Version>
-    <Description>A pack of new abilities for Bopl Battle. First skill: Pinball.</Description>
+    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>
@@ -29,5 +29,19 @@
       <HintPath>$(BoplManagedDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Embedded assets: PNG icons (ImageConversion), WAV sounds (AudioClip/AudioSource). -->
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Skill art and sounds, shipped inside the DLL (read with Core/EmbeddedAssets.cs by file name). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\**\*" LogicalName="CaliSkills.Assets.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

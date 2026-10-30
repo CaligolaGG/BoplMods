@@ -1,6 +1,7 @@
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using CustomRules.Core;
 using CustomRules.Rules;
 using HarmonyLib;
 
@@ -24,6 +25,7 @@ public class Plugin : BaseUnityPlugin
         RulesConfig = Config;
 
         BasicRules.Register();
+        RuleProfiles.Init();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
         new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll(typeof(Plugin).Assembly);

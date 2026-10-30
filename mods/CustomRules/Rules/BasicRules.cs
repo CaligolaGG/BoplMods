@@ -12,6 +12,11 @@ internal static class BasicRules
     internal static Rule PermanentInvisibility;
     internal static Rule DisableAbilitySpawning;
     internal static Rule InfiniteRound;
+    internal static Rule PlayerBouncing;
+    internal static Rule BounceOnEverything;
+    internal static Rule BouncePower;
+    internal static Rule ExtraJump;
+    internal static Rule AirJumps;
 
     internal static void Register()
     {
@@ -29,5 +34,16 @@ internal static class BasicRules
             "No ability pickups: none appear during the round, and players don't drop their ability when they die.");
         InfiniteRound = RuleRegistry.AddBool("InfiniteRound", "Infinite round duration", false,
             "No sudden death: the platforms never start falling, however long the round lasts.");
+        PlayerBouncing = RuleRegistry.AddBool("PlayerBouncing", "Player bouncing mode", false,
+            "Slimes are solid: they bounce off each other instead of passing through.");
+        BounceOnEverything = RuleRegistry.AddBool("PlayerBouncing.Everything", "Bounce on everything", false,
+            "Slimes don't stick to platforms anymore: they bounce off them too. Touching a platform gives back your jump (press jump in the air).",
+            parent: PlayerBouncing);
+        BouncePower = RuleRegistry.AddFloat("PlayerBouncing.BouncePower", "Bounce power ×", 1f, 0f, 10f,
+            "Multiplies how bouncy the slimes are (1 = keeps its speed off platforms).", parent: PlayerBouncing);
+        ExtraJump = RuleRegistry.AddBool("ExtraJump", "Extra Jump", false,
+            "Players can jump again in mid-air.");
+        AirJumps = RuleRegistry.AddInt("ExtraJump.AirJumps", "Air jumps", 2, 1, 10,
+            "Extra jumps in mid-air (2 = Triple Jump). They come back on landing.", parent: ExtraJump);
     }
 }

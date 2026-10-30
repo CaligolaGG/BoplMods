@@ -23,7 +23,7 @@ Paths differ on another PC? Copy `Directory.Build.user.props.example` to `Direct
 
 ```bash
 # 1. build: compiles and copies the DLL into the mod manager profile
-dotnet build mods/TripleJump -c Release
+dotnet build mods/CustomRules/CustomRules.csproj -c Release
 
 # 2. Thunderstore Mod Manager -> Bopl Battle -> profile "Default" -> "Start modded"
 
@@ -36,8 +36,10 @@ The dev build is deployed to `BepInEx\plugins\<Team>-<Mod>-dev\`. The mod manage
 ## Making a release
 
 ```bash
-dotnet build mods/TripleJump -c Release -t:PackThunderstore
-# -> dist/caligola-TripleJump-1.0.1.zip
+dotnet build mods/CustomRules/CustomRules.csproj -c Release -t:PackThunderstore
+# -> dist/caligola-CustomRules-1.0.0.zip
+
+build-all.cmd   # every mod -> dist/ (no deploy)
 ```
 
 - **Try it locally like a user would:** Thunderstore Mod Manager → *Settings* → *Import local mod* → pick the zip. (Delete the `-dev` folder first, or the mod loads twice.)
@@ -48,9 +50,8 @@ dotnet build mods/TripleJump -c Release -t:PackThunderstore
 
 | Mod | Description |
 |---|---|
-| [TripleJump](mods/TripleJump/README.md) | Up to 2 extra jumps in mid-air (configurable). |
-| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a thrown ball that bounces for 10 s and knocks players back. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
-| [CustomRules](mods/CustomRules/README.md) | Host-set match rules (cooldowns, player size, gravity, speed, permanent invisibility) from a "Custom rules" window in character select. Other mods can add rules. |
+| [CaliSkills](mods/CaliSkills/README.md) | Pack of new abilities. Pinball: a thrown ball that bounces for 10 s and knocks players back. Omae wa mo shindeiru: an aimed poke that marks players, who die 20 s later. Tuning in `mods/CaliSkills/Abilities/Pinball/PinballSettings.cs`. |
+| [CustomRules](mods/CustomRules/README.md) | Host-set match rules (cooldowns, player size, gravity, speed, permanent invisibility, no pickups, no sudden death, bouncy players, triple jump — formerly the TripleJump mod) from a "Custom rules" window in character select. Other mods can add rules. |
 | [CaliGameModes](mods/CaliGameModes/README.md) | Game modes in the CustomRules window (needs CustomRules + CaliSkills). Pinball mode: pinballs shot from the screen sides. |
 | [SpawnBot](mods/SpawnBot/README.md) | Dev tool: a SpawnBot ability that spawns idle bot players to test offensive abilities on (local games only). |
 
@@ -58,7 +59,7 @@ Reference: [docs/ABILITIES.md](docs/ABILITIES.md) lists the game's abilities and
 
 ## Adding a new mod
 
-1. Copy `mods/TripleJump` to `mods/MyMod`, rename `TripleJump.csproj` → `MyMod.csproj`.
+1. Copy `mods/SpawnBot` to `mods/MyMod`, rename `SpawnBot.csproj` → `MyMod.csproj`.
 2. In the `.csproj` change `AssemblyName`, `RootNamespace`, `BepInExPluginGuid`, `BepInExPluginName`, `Description`, reset `Version`.
 3. In `thunderstore.toml` change `name`, `description`, and the `build.copy` DLL path.
 4. Replace the patches, README, CHANGELOG and icon (256×256 PNG).

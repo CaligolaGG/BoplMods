@@ -23,7 +23,7 @@ public enum RuleType
 public sealed class Rule
 {
     internal Rule(string key, string label, string description, RuleType type, object defaultValue,
-        float min, float max, Rule parent, ConfigEntryBase entry)
+        float min, float max, Rule parent, RuleSection section, ConfigEntryBase entry)
     {
         Key = key;
         Label = label;
@@ -33,6 +33,7 @@ public sealed class Rule
         Min = min;
         Max = max;
         Parent = parent;
+        Section = section;
         Entry = entry;
         SetActive(Format(defaultValue));
     }
@@ -54,6 +55,9 @@ public sealed class Rule
 
     /// <summary>A bool rule this one belongs to: it's shown under it, and only while the parent is on.</summary>
     public Rule Parent { get; }
+
+    /// <summary>The menu group it's drawn in; null = the basic rules at the top.</summary>
+    public RuleSection Section { get; }
 
     internal ConfigEntryBase Entry { get; }
 

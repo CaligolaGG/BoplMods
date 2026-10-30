@@ -1,6 +1,8 @@
 # Modding Unity games, and Bopl Battle in particular
 
-This guide assumes you know C# and Unity and have never modded a compiled game. It goes from "how is this even possible" to publishing on Thunderstore, using the `TripleJump` mod in this repo as the worked example.
+This guide assumes you know C# and Unity and have never modded a compiled game. It goes from "how is this even possible" to publishing on Thunderstore, using the `TripleJump` mod as the worked example.
+
+> **Note:** TripleJump has since been merged into CustomRules as the "Triple jump" rule (`mods/CustomRules/Rules/AirJumpsRule.cs`, nearly the same code). The standalone project quoted below is in git history (`git show 9dbd21d:mods/TripleJump/AirJumpPatches.cs`); to follow along, restore it with `git checkout 9dbd21d -- mods/TripleJump`.
 
 ---
 

@@ -13,11 +13,14 @@ namespace CustomRules.UI;
 /// "Custom rules" button on the character select screens (local and online lobby) and the rules window (IMGUI).
 /// The host (or, locally, whoever plays) edits the rules; online clients see the host's rules read-only.
 /// Rules registered with a parent are shown under it, only while the parent is on (sub menu).
+/// Two tabs: Rules, and Profiles (saved sets of rules, see RulesMenu.Profiles.cs).
 /// </summary>
-internal sealed class RulesMenu : MonoBehaviour
+internal sealed partial class RulesMenu : MonoBehaviour
 {
     private const int WindowId = 0x0C5713;
     private const float WindowWidth = 600f;
+    private const float SectionGap = 16f;
+    private const float RuleGap = 8f;
     private static readonly string[] LobbyScenes = { "CharacterSelect", "ChSelect_online" };
 
     private static RulesMenu _instance;
@@ -25,11 +28,15 @@ internal sealed class RulesMenu : MonoBehaviour
 
     private bool _open;
     private bool _readOnly;
+    private int _tab;
+    private static readonly string[] Tabs = { "Rules", "Profiles" };
     private Dictionary<Rule, string> _texts = new();
     private string _message;
     private Vector2 _scroll;
     private Rect _window;
     private Texture2D _backdrop;
+    private GUIStyle _sectionTitleStyle;
+    private GUIStyle _ruleFrameStyle;
     private readonly List<Behaviour> _disabledEventSystems = new();
 
     /// <summary>True while open, and for the frame it closed in (so the closing key/click doesn't reach the menu).</summary>
@@ -50,17 +57,25 @@ internal sealed class RulesMenu : MonoBehaviour
     private void Open()
     {
         _readOnly = RulesSync.IsOnlineClient;
+        LoadTexts();
+        _message = _readOnly && RulesSync.HostValues == null ? "The host's rules haven't arrived yet." : null;
+        _tab = 0;
+        ResetProfilesTab();
+        _scroll = Vector2.zero;
+        _window = default;
+        _open = true;
+        SetMenuEventSystems(enabled: false);
+    }
+
+    /// <summary>The values shown in the Rules tab: this machine's rules, or the host's for online guests.</summary>
+    private void LoadTexts()
+    {
         IReadOnlyDictionary<string, string> hostValues = RulesSync.HostValues;
         _texts = RuleRegistry.Rules.ToDictionary(
             r => r,
             r => !_readOnly ? r.LocalText
                 : hostValues != null && hostValues.TryGetValue(r.Key, out string text) ? text
                 : r.DefaultText);
-        _message = _readOnly && hostValues == null ? "The host's rules haven't arrived yet." : null;
-        _scroll = Vector2.zero;
-        _window = default;
-        _open = true;
-        SetMenuEventSystems(enabled: false);
     }
 
     private void Close()
@@ -106,7 +121,7 @@ internal sealed class RulesMenu : MonoBehaviour
 
         if (_window.width <= 0f)
         {
-            float h = Mathf.Min(height - 40f, 160f + RuleRegistry.Rules.Count * 48f);
+            float h = Mathf.Min(height - 40f, 200f + RuleRegistry.Rules.Count * 64f + RuleRegistry.Sections.Count * 60f);
             _window = new Rect((width - WindowWidth) / 2f, (height - h) / 2f, WindowWidth, h);
         }
         _window = GUI.ModalWindow(WindowId, _window, DrawWindow, _readOnly ? "Custom rules (set by the host)" : "Custom rules");
@@ -114,13 +129,36 @@ internal sealed class RulesMenu : MonoBehaviour
 
     private void DrawWindow(int id)
     {
+        int tab = GUILayout.Toolbar(_tab, Tabs);
+        if (tab != _tab)
+        {
+            _tab = tab;
+            _message = null;
+            _scroll = Vector2.zero;
+        }
+
+        if (_tab == 1)
+            DrawProfilesTab();
+        else
+            DrawRulesTab();
+
+        GUI.DragWindow();
+    }
+
+    private void DrawRulesTab()
+    {
+        if (!_readOnly)
+            DrawActiveProfileLine();
+
         GUILayout.Label(_readOnly
             ? "Only the lobby host can change the rules. Every player needs the same rule mods."
             : "Applies to everyone in the match. Online, the host's rules are used (every player needs the same rule mods).");
 
         _scroll = GUILayout.BeginScrollView(_scroll);
-        foreach (Rule rule in RuleRegistry.Rules.Where(r => r.Parent == null))
+        foreach (Rule rule in RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == null))
             DrawRule(rule, 0);
+        foreach (RuleSection section in RuleRegistry.Sections)
+            DrawSection(section);
         GUILayout.EndScrollView();
 
         if (!string.IsNullOrEmpty(_message))
@@ -143,12 +181,42 @@ internal sealed class RulesMenu : MonoBehaviour
         if (GUILayout.Button("Close (Esc)"))
             Close();
         GUILayout.EndHorizontal();
+    }
 
-        GUI.DragWindow();
+    /// <summary>A mod's own rules: set apart by a gap, in a box tinted with the section's color, under its title.</summary>
+    private void DrawSection(RuleSection section)
+    {
+        List<Rule> rules = RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == section).ToList();
+        if (rules.Count == 0)
+            return;
+
+        // fontSize 0 means "the font's own size", so the base size comes from the font when the skin doesn't set one.
+        int baseSize = GUI.skin.label.fontSize > 0 ? GUI.skin.label.fontSize
+            : GUI.skin.font != null && GUI.skin.font.fontSize > 0 ? GUI.skin.font.fontSize : 14;
+        _sectionTitleStyle ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = baseSize + 3 };
+
+        GUILayout.Space(SectionGap);
+        Color oldBackground = GUI.backgroundColor;
+        Color oldContent = GUI.contentColor;
+        GUI.backgroundColor = section.Tint;
+        GUILayout.BeginVertical(GUI.skin.box);
+        GUI.backgroundColor = oldBackground;
+
+        GUI.contentColor = Color.Lerp(section.Tint, Color.white, 0.35f);
+        GUILayout.Label(section.Title, _sectionTitleStyle);
+        GUI.contentColor = oldContent;
+
+        foreach (Rule rule in rules)
+            DrawRule(rule, 0);
+        GUILayout.EndVertical();
     }
 
     private void DrawRule(Rule rule, int depth)
     {
+        // Each rule (with its sub rules inside) sits in its own thin rounded frame, apart from the next one.
+        if (depth == 0)
+            GUILayout.BeginVertical(RuleFrameStyle);
+
         float indent = depth * 24f;
         GUILayout.BeginHorizontal();
         GUILayout.Space(indent);
@@ -176,6 +244,47 @@ internal sealed class RulesMenu : MonoBehaviour
         {
             foreach (Rule child in RuleRegistry.Rules.Where(r => r.Parent == rule))
                 DrawRule(child, depth + 1);
+        }
+
+        if (depth == 0)
+        {
+            GUILayout.EndVertical();
+            GUILayout.Space(RuleGap);
+        }
+    }
+
+    /// <summary>A 9-sliced texture: transparent inside, thin white rounded outline.</summary>
+    private GUIStyle RuleFrameStyle
+    {
+        get
+        {
+            if (_ruleFrameStyle != null)
+                return _ruleFrameStyle;
+
+            const int size = 32, radius = 8;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, mipChain: false) { filterMode = FilterMode.Bilinear };
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    // Distance from the rounded rectangle's edge (negative inside).
+                    float dx = Mathf.Max(radius - (x + 0.5f), (x + 0.5f) - (size - radius), 0f);
+                    float dy = Mathf.Max(radius - (y + 0.5f), (y + 0.5f) - (size - radius), 0f);
+                    float edge = Mathf.Sqrt(dx * dx + dy * dy) - (radius - 0.5f);
+                    float alpha = Mathf.Clamp01(1f - Mathf.Abs(edge + 0.75f) / 0.9f);
+                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha * 0.7f));
+                }
+            }
+            tex.Apply();
+
+            _ruleFrameStyle = new GUIStyle
+            {
+                normal = { background = tex },
+                border = new RectOffset(radius + 1, radius + 1, radius + 1, radius + 1),
+                padding = new RectOffset(10, 10, 6, 8),
+                margin = new RectOffset(2, 2, 0, 0),
+            };
+            return _ruleFrameStyle;
         }
     }
 

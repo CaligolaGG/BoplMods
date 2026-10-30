@@ -23,7 +23,8 @@ internal static class PinballMode
     internal static void Register()
     {
         Enabled = RuleRegistry.AddBool("PinballMode", "Pinball mode", false,
-            "Pinballs are shot into the arena from the sides of the screen. They use the host's Pinball ability settings.");
+            "Pinballs are shot into the arena from the sides of the screen. They use the host's Pinball ability settings.",
+            section: Plugin.Section);
         SpawnInterval = RuleRegistry.AddFloat("PinballMode.SpawnInterval", "Spawn timing (s)", 1f, 0.25f, 60f,
             "Seconds between two pinballs.", parent: Enabled);
 
