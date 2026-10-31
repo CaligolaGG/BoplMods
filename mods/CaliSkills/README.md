@@ -29,6 +29,10 @@ Throw a **pinball** by hand, aimed like the Grenade.
 
 Hold the button to run **20% faster**. Release it and the **3 second** cooldown starts. You can use your other abilities while running, but that ends the run.
 
+### Wooden Bat
+
+Hold the button to raise the bat (aim it with your movement keys, like the Bow), release to **swing**. The bat is solid like a platform, but nothing sticks to it: players it hits get **shoved along and knocked a little**, and anyone caught **between the bat and a platform gets squished** (unless the host turns on the bat's `NoSquashing` stat: then they're only knocked and the bat passes through them, and the bat no longer counts as an offensive ability). It also **hits projectiles back**: arrows, grenades, smoke grenades, pinballs, missiles, mines... A deflected projectile becomes yours, so it can hit whoever threw it. It never hits you. Swing it into a platform to **bounce away** from it, e.g. hit the ground below you to pogo up. Cooldown: **3 seconds**, from the end of the swing.
+
 ### Nothing Personal Kid
 
 Teleport **behind the player furthest from you**, Teleport-style: you vanish in a puff of smoke, a light beam runs to a portal behind them, and you appear there a tenth of a second later. For a moment after appearing you're **immune** (like after a respawn) but can't use other abilities. Cooldown: **10 seconds**.

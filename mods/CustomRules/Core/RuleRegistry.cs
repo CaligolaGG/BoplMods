@@ -92,9 +92,10 @@ public static class RuleRegistry
 
     /// <summary>
     /// A rule with no row in the Rules tab (see <see cref="Rule.Hidden"/>), saved in <paramref name="configSection"/>.
-    /// Numbers aren't range-limited (only to ±1e9).
+    /// Numbers are clamped to [<paramref name="min"/>, <paramref name="max"/>] (by default only to ±1e9).
     /// </summary>
-    internal static Rule AddHidden(string key, RuleType type, object defaultValue, string description, string configSection)
+    internal static Rule AddHidden(string key, RuleType type, object defaultValue, string description, string configSection,
+        float min = -1e9f, float max = 1e9f)
     {
         if (Find(key) != null || SyncedList.Any(s => s.Key == key))
             throw new ArgumentException($"Duplicate rule key '{key}'.");
@@ -107,7 +108,7 @@ public static class RuleRegistry
             _ => Plugin.RulesConfig.Bind(configSection, key, (string)defaultValue, description),
         };
 
-        var rule = new Rule(key, key, description, type, defaultValue, -1e9f, 1e9f, null, null, entry) { Hidden = true };
+        var rule = new Rule(key, key, description, type, defaultValue, min, max, null, null, entry) { Hidden = true };
         RuleList.Add(rule);
         return rule;
     }

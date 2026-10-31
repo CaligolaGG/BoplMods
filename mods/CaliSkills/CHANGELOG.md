@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.5.1
+- New skill: Wooden Bat. Hold to raise the bat (aim with movement), release to swing it. The bat is solid: it shoves players along and knocks them slightly, squishes anyone caught between it and a platform, never hits you, and hitting a platform with it bounces you away (pogo). 3 s cooldown. Hits flying projectiles back (arrows, grenades, smoke grenades, pinballs, missiles, mines...), which then count as yours (`DeflectProjectiles`, `DeflectPower` stats). `NoSquashing` stat (off by default): no squishing, caught players are only knocked, and the bat stops counting as offensive (CustomRules' offensive filters, Random).
 - Skill stats are now set by the lobby host in CustomRules (Custom rules → Abilities → right-click a skill), saved and used by every player. CustomRules is optional: without it the skills use their built-in values.
 - Removed the old right-click settings editor in the ability grid (local only).
 

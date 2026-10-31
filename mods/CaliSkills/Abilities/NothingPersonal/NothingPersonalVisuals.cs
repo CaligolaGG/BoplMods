@@ -50,9 +50,9 @@ internal static class NothingPersonalVisuals
         {
             foreach (Component component in marker.GetComponentsInChildren<Component>(includeInactive: true).Reverse())
             {
-                if (component is Transform || component is Renderer || component is ParticleSystem)
+                if (component is Transform || component is Renderer || component is ParticleSystem || IsRequired(component))
                     continue;
-                Object.DestroyImmediate(component); // fails silently while another component requires it: next pass
+                Object.DestroyImmediate(component); // what required it goes in this pass, it goes in the next
             }
         }
         foreach (ParticleSystem particles in marker.GetComponentsInChildren<ParticleSystem>(includeInactive: true))
@@ -152,6 +152,25 @@ internal static class NothingPersonalVisuals
             renderer.sharedMaterial = _smokeMaterial;
         renderer.sortingOrder = 10;
         go.AddComponent<SmokePuff>().Init(renderer, _smokeFrames, NothingPersonalSettings.SmokeDuration);
+    }
+
+    /// <summary>Whether another component on the same object has [RequireComponent] for it (Unity refuses to remove it then).</summary>
+    private static bool IsRequired(Component component)
+    {
+        foreach (Component other in component.GetComponents<Component>())
+        {
+            if (other == null || other == component)
+                continue;
+            foreach (RequireComponent require in other.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true))
+            {
+                foreach (System.Type type in new[] { require.m_Type0, require.m_Type1, require.m_Type2 })
+                {
+                    if (type != null && type.IsInstanceOfType(component))
+                        return true;
+                }
+            }
+        }
+        return false;
     }
 }
 

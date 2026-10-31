@@ -32,6 +32,13 @@ internal abstract class Skill
     public virtual Type SettingsType => null;
 
     /// <summary>
+    /// Whether the skill counts as offensive with the given settings, for skills where a setting changes that (e.g. the
+    /// Wooden Bat with NoSquashing). <paramref name="lobbyValue"/> gives a setting's value as set in the lobby (text), or
+    /// null to use the settings fields (the values of the match in progress). Default: <see cref="IsOffensive"/>.
+    /// </summary>
+    public virtual bool IsOffensiveWith(Func<string, string> lobbyValue) => IsOffensive;
+
+    /// <summary>
     /// Called at match start after the settings were set to the host's values. Re-apply values that were baked into
     /// prefabs at creation (cooldown, sizes, physics...); values read at runtime need nothing.
     /// </summary>

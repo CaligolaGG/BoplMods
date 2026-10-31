@@ -49,15 +49,50 @@ public static class AbilityStats
             string description = field.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
             Rule rule = RuleRegistry.AddHidden($"Stat.{Id(abilityName)}.{field.Name}", type.Value, field.GetValue(null),
                 $"{abilityName}: {description}", ConfigSection);
-            set.Stats.Add(new AbilityStat(field, rule, description));
+            set.Stats.Add(new AbilityStat(field.Name, field, rule, description));
         }
+        Add(set);
+    }
 
+    /// <summary>
+    /// Stats that are multipliers (default 1, at least 0) read by the caller itself (<see cref="AbilityStat.Rule"/>'s
+    /// active value), not fields: e.g. the vanilla abilities' stats. <paramref name="stats"/> = (key, label, hint).
+    /// </summary>
+    internal static AbilityStatSet RegisterMultipliers(string abilityName, IEnumerable<(string Key, string Label, string Description)> stats)
+    {
+        if (Find(abilityName) != null)
+            throw new ArgumentException($"Stats for '{abilityName}' are already registered.");
+        var set = new AbilityStatSet(abilityName, null);
+        foreach ((string key, string label, string description) in stats)
+        {
+            Rule rule = RuleRegistry.AddHidden($"Stat.{Id(abilityName)}.{key}", RuleType.Float, 1f,
+                $"{abilityName}: {description}", ConfigSection, 0f, 100f);
+            set.Stats.Add(new AbilityStat(label, null, rule, description));
+        }
+        Add(set);
+        return set;
+    }
+
+    private static void Add(AbilityStatSet set)
+    {
         if (Sets.Count == 0)
             RuleRegistry.RulesActivated += ApplyActive;
         Sets.Add(set);
     }
 
     internal static AbilityStatSet Find(string abilityName) => Sets.FirstOrDefault(s => s.Ability == abilityName);
+
+    /// <summary>
+    /// A stat's value as set in the lobby right now (the host's for online guests, this machine's otherwise), as text
+    /// (invariant culture; bools "True"/"False"). For lobby-side decisions before the match makes the values active,
+    /// e.g. whether an ability currently counts as offensive. <paramref name="statName"/> = the settings field's name.
+    /// </summary>
+    public static bool TryGetLobbyValue(string abilityName, string statName, out string value)
+    {
+        AbilityStat stat = Find(abilityName)?.Stats.FirstOrDefault(s => s.Name == statName);
+        value = stat != null ? RulesSync.LobbyText(stat.Rule) : null;
+        return stat != null;
+    }
 
     /// <summary>Whether a stat of the ability differs from its default, as set in the lobby (the host's for guests).</summary>
     internal static bool IsModifiedInLobby(string abilityName)
@@ -86,6 +121,8 @@ public static class AbilityStats
             {
                 foreach (AbilityStat stat in set.Stats)
                 {
+                    if (stat.Field == null)
+                        continue;
                     Rule rule = stat.Rule;
                     object value = rule.Type switch
                     {
@@ -122,13 +159,18 @@ internal sealed class AbilityStatSet
 
 internal sealed class AbilityStat
 {
-    public AbilityStat(FieldInfo field, Rule rule, string description)
+    public AbilityStat(string name, FieldInfo field, Rule rule, string description)
     {
+        Name = name;
         Field = field;
         Rule = rule;
         Description = description;
     }
 
+    /// <summary>Shown in the stats window.</summary>
+    public string Name { get; }
+
+    /// <summary>The settings field it's written to at match start; null for multipliers read by the caller.</summary>
     public FieldInfo Field { get; }
 
     public Rule Rule { get; }

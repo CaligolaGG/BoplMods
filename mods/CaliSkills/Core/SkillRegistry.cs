@@ -13,6 +13,7 @@ internal static class SkillRegistry
 {
     private static readonly List<Skill> Skills = new();
     private static readonly Dictionary<Skill, NamedSprite> Entries = new();
+    private static readonly List<NamedSpriteList> Lists = new();
     private static GameObject _prefabRoot;
 
     /// <summary>Inactive, persistent parent: children never run Awake, but clones made from them do.</summary>
@@ -63,7 +64,33 @@ internal static class SkillRegistry
 
             // Appended last: indices are ability ids, so vanilla abilities keep theirs.
             list.sprites.Add(entry);
+            if (!Lists.Contains(list))
+                Lists.Add(list);
             Plugin.Log.LogInfo($"Registered skill '{skill.Name}' as #{list.sprites.Count - 1} in '{list.name}'.");
+        }
+    }
+
+    /// <summary>
+    /// Sets whether a skill counts as offensive (Random's draws, CustomRules' offensive filters...) in every ability list
+    /// it was added to. Entries are structs: each list's copy is replaced.
+    /// </summary>
+    internal static void SetOffensive(Skill skill, bool offensive)
+    {
+        if (Entries.TryGetValue(skill, out NamedSprite entry) && entry.isOffensiveAbility != offensive)
+        {
+            entry.isOffensiveAbility = offensive;
+            Entries[skill] = entry;
+        }
+        foreach (NamedSpriteList list in Lists)
+        {
+            if (list == null)
+                continue;
+            int index = list.IndexOf(skill.Name);
+            if (index < 0 || list.sprites[index].isOffensiveAbility == offensive)
+                continue;
+            NamedSprite listed = list.sprites[index];
+            listed.isOffensiveAbility = offensive;
+            list.sprites[index] = listed;
         }
     }
 

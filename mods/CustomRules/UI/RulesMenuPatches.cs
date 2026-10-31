@@ -5,8 +5,9 @@ using HarmonyLib;
 namespace CustomRules.UI;
 
 /// <summary>
-/// Creates the rules menu the first time a character select screen opens, and extends the cooldown rule to modded
-/// abilities (all mods are loaded by then).
+/// Creates the rules menu the first time a character select screen opens, extends the cooldown rule to modded
+/// abilities (all mods are loaded by then) and sets up the vanilla ability stats' spawn tracking (needs the ability
+/// list).
 /// </summary>
 [HarmonyPatch]
 internal static class CreateRulesMenuPatch
@@ -19,8 +20,22 @@ internal static class CreateRulesMenuPatch
 
     private static void Postfix()
     {
-        RulesMenu.EnsureCreated();
-        Rules.CooldownRule.PatchModdedAbilities(Plugin.Harmony);
+        // Each step on its own: an exception here would abort the lobby's Awake (no Start button, no way back).
+        Run(RulesMenu.EnsureCreated, "the rules menu");
+        Run(() => Rules.CooldownRule.PatchModdedAbilities(Plugin.Harmony), "the cooldown rule for modded abilities");
+        Run(() => Rules.VanillaAbilityStats.PatchSpawnScopes(Plugin.Harmony), "the vanilla ability stats");
+    }
+
+    private static void Run(System.Action step, string what)
+    {
+        try
+        {
+            step();
+        }
+        catch (System.Exception e)
+        {
+            Plugin.Log.LogError($"Setting up {what} failed: {e}");
+        }
     }
 }
 

@@ -8,7 +8,8 @@ namespace CustomRules.UI;
 
 /// <summary>
 /// The "Abilities" row of the Rules tab opens a grid of every ability (like the preselect picker):
-/// - right-click (or click) an ability to edit its stats (<see cref="AbilityStats"/>; abilities without registered
+/// - right-click (or click) an ability to edit its stats (<see cref="AbilityStats"/>: the game's abilities as multipliers,
+///   see <see cref="VanillaAbilityStats"/>, and mods' own settings; abilities without registered
 ///   stats, e.g. vanilla ones, can't be edited);
 /// - middle-click to disable / re-enable it (<see cref="AbilityRules.Disabled"/>).
 /// Changed abilities get a yellow border, disabled ones a red "no" sign (in the ability grid: a yellow ring and the
@@ -207,7 +208,7 @@ internal sealed partial class RulesMenu
     {
         if (!editable)
         {
-            _message = $"{name} has no stats to change (only abilities from mods that offer them, e.g. CaliSkills).";
+            _message = $"{name} has no stats to change.";
             return;
         }
         _editingStats = name;
@@ -233,7 +234,7 @@ internal sealed partial class RulesMenu
         {
             Rule rule = stat.Rule;
             GUILayout.BeginHorizontal();
-            GUILayout.Label(stat.Field.Name, GUILayout.Width(200f));
+            GUILayout.Label(stat.Name, GUILayout.Width(200f));
 
             GUI.enabled = !_readOnly;
             if (rule.Type == RuleType.Bool)
