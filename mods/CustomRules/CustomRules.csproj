@@ -29,6 +29,11 @@
       <HintPath>$(BoplManagedDir)\UnityEngine.UIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- The Replays option copied into the game's settings menu (its texts are TextMeshPro). -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(BoplManagedDir)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>$(BoplManagedDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>

@@ -5,6 +5,7 @@
 - Disabled abilities can't be picked (greyed out, red "no" sign) and Random never gives them, like the offensive filters. The host can also middle-click abilities in the character select grid.
 - Abilities with changed stats get a yellow ring in character select and a yellow border in the abilities window.
 - Public API for ability mods: `AbilityStats.Register`.
+- Replays on/off option in the game's Settings menu: off = matches aren't recorded or saved as replays. The settings menu scrolls when it's taller than the screen.
 - New rules: Ability spawning time × (time between ability pickups appearing) and Ability cap per round (normally 3).
 
 ## 1.0.0

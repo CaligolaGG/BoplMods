@@ -29,6 +29,7 @@ public class Plugin : BaseUnityPlugin
         BasicRules.Register();
         AbilityRules.Register();
         RuleProfiles.Init();
+        ReplaySaving.Init();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
         Harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);

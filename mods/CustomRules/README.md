@@ -48,6 +48,10 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 - **Middle-click** an ability to **disable** it (red "no" sign) or enable it again. Disabled abilities can't be picked and Random never gives them. The host can also middle-click abilities directly in the character select grid.
 - Press **Apply** to save. Stats and disabled abilities are saved in profiles too.
 
+## Replays option
+
+The game's **Settings** menu (main menu) gets a **Replays : on / off** option, above Save. Off = matches aren't recorded or saved to the replays folder (`AppData/LocalLow/Johan Gronvall/BoplBattle/replays`). It's your own setting, not a match rule, and it's saved right away. The settings menu scrolls when it doesn't fit on screen (mouse wheel, or it follows the selected option).
+
 ## Notes
 
 - **Every player in the lobby needs this mod** (and the same rule mods, e.g. CaliGameModes), otherwise the game desyncs.
