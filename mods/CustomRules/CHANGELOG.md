@@ -4,7 +4,10 @@
 - Abilities window (Rules tab → Abilities): every ability in a grid. Right-click one to change its stats, saved and used by every player: the game's abilities get multipliers for cooldown, duration, charge time, charge power, knockback, speed and size (where they apply), abilities from mods that offer them (e.g. CaliSkills) their own settings. Middle-click to disable / re-enable it.
 - Disabled abilities can't be picked (greyed out, red "no" sign) and Random never gives them, like the offensive filters. The host can also middle-click abilities in the character select grid.
 - Abilities with changed stats get a yellow ring in character select and a yellow border in the abilities window.
-- Public API for ability mods: `AbilityStats.Register`, `AbilityStats.TryGetLobbyValue`.
+- New rule: Sudden death time (s), with Infinite round duration. The Abilities row is now the first one of the Rules tab.
+- API: `RuleRegistry.AddPreset` (turning a rule on in the menu also sets others), `AbilityStats.AddMenuButton` (a rule's sub row that opens a stats window, e.g. a game mode's ball), `Rule.LobbyText`/`LobbyBool`.
+- "Reset to defaults" in the abilities window: every ability's stats back to default and every ability enabled again.
+- Public API for ability mods: `AbilityStats.Register`, `AbilityStats.TryGetLobbyValue`. Each stat is shown in its own frame; settings fields with the same `[Category]` share one, under the category's name.
 - Replays on/off option in the game's Settings menu: off = matches aren't recorded or saved as replays. The settings menu scrolls when it's taller than the screen.
 - New rules: Ability spawning time × (time between ability pickups appearing) and Ability cap per round (normally 3).
 

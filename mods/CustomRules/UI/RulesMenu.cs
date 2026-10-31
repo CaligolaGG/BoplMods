@@ -167,9 +167,9 @@ internal sealed partial class RulesMenu : MonoBehaviour
             : "Applies to everyone in the match. Online, the host's rules are used (every player needs the same rule mods).");
 
         _scroll = GUILayout.BeginScrollView(_scroll);
+        DrawAbilitiesField();
         foreach (Rule rule in RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == null && !r.Hidden))
             DrawRule(rule, 0);
-        DrawAbilitiesField();
         foreach (RuleSection section in RuleRegistry.Sections)
             DrawSection(section);
         GUILayout.EndScrollView();
@@ -245,6 +245,12 @@ internal sealed partial class RulesMenu : MonoBehaviour
                 // Exclusive pair: turning this one on turns the other off.
                 if (on && !wasOn && rule.ExclusiveWith != null)
                     _texts[rule.ExclusiveWith] = bool.FalseString;
+                // Turning it on also sets the rules it goes with (e.g. a game mode's usual setup).
+                if (on && !wasOn)
+                {
+                    foreach (KeyValuePair<Rule, string> preset in rule.Presets)
+                        _texts[preset.Key] = preset.Value;
+                }
                 break;
             case RuleType.Choice:
                 DrawChoice(rule);
@@ -266,11 +272,14 @@ internal sealed partial class RulesMenu : MonoBehaviour
         GUILayout.Label(rule.Description);
         GUILayout.EndHorizontal();
 
-        // Sub menu: children only while this (bool) rule is on.
-        if (rule.Type == RuleType.Bool && _texts[rule] == bool.TrueString)
+        // Sub menu: children only while this (bool) rule is on (some are always shown), then its stats buttons.
+        bool open = rule.Type == RuleType.Bool && _texts[rule] == bool.TrueString;
+        foreach (Rule child in RuleRegistry.Rules.Where(r => r.Parent == rule && !r.Hidden && (open || r.ShownWhenParentOff)))
+            DrawRule(child, depth + 1);
+        if (open)
         {
-            foreach (Rule child in RuleRegistry.Rules.Where(r => r.Parent == rule && !r.Hidden))
-                DrawRule(child, depth + 1);
+            foreach (StatsButton button in AbilityStats.Buttons.Where(b => b.Parent == rule))
+                DrawStatsButton(button, depth + 1);
         }
 
         if (depth == 0)

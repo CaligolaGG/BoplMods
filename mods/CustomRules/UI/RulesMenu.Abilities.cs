@@ -86,13 +86,37 @@ internal sealed partial class RulesMenu
         GUILayout.Space(RuleGap);
     }
 
+    /// <summary>A sub row of a rule (<see cref="AbilityStats.AddMenuButton"/>): opens the stats window of its set.</summary>
+    private void DrawStatsButton(StatsButton button, int depth)
+    {
+        float indent = depth * 24f;
+        GUILayout.BeginHorizontal();
+        GUILayout.Space(indent);
+        GUILayout.Label(button.Label, GUILayout.Width(200f - indent));
+        if (GUILayout.Button(_readOnly ? "View" : "Edit", GUILayout.Width(90f)))
+            OpenStats(button.StatsName, AbilityStats.Find(button.StatsName) != null);
+        if (PendingModified(button.StatsName))
+        {
+            Color oldContent = GUI.contentColor;
+            GUI.contentColor = ChangedColor;
+            GUILayout.Label("changed");
+            GUI.contentColor = oldContent;
+        }
+        GUILayout.EndHorizontal();
+
+        GUILayout.BeginHorizontal();
+        GUILayout.Space(indent + 12f);
+        GUILayout.Label(button.Description);
+        GUILayout.EndHorizontal();
+    }
+
     /// <returns>True if an abilities window was drawn (in place of the rules window).</returns>
     private bool DrawAbilitiesWindows(float screenWidth, float screenHeight)
     {
         if (_editingStats != null)
         {
             int count = AbilityStats.Find(_editingStats)?.Stats.Count ?? 0;
-            float height = Mathf.Min(screenHeight - 40f, 150f + count * 50f);
+            float height = Mathf.Min(screenHeight - 40f, 150f + count * 66f);
             var rect = new Rect((screenWidth - StatsWindowWidth) / 2f, (screenHeight - height) / 2f, StatsWindowWidth, height);
             GUI.ModalWindow(StatsWindowId, rect, DrawStatsWindow, _readOnly ? $"{_editingStats} stats (set by the host)" : $"{_editingStats} stats");
             return true;
@@ -135,9 +159,26 @@ internal sealed partial class RulesMenu
         GUILayout.FlexibleSpace();
         if (!_readOnly && GUILayout.Button("Apply", GUILayout.Width(120f)))
             Apply();
+        if (!_readOnly && GUILayout.Button("Reset to defaults", GUILayout.Width(140f)))
+            ResetAllAbilities();
         if (GUILayout.Button("Back (Esc)", GUILayout.Width(120f)))
             CloseTopAbilitiesWindow();
         GUILayout.EndHorizontal();
+    }
+
+    /// <summary>Every ability's stats back to their defaults, and every ability enabled again (pending until Apply).</summary>
+    private void ResetAllAbilities()
+    {
+        foreach (string name in AbilityRules.AbilityNames())
+        {
+            AbilityStatSet set = AbilityStats.Find(name);
+            if (set == null)
+                continue;
+            foreach (AbilityStat stat in set.Stats)
+                _texts[stat.Rule] = stat.Rule.DefaultText;
+        }
+        _texts[AbilityRules.Disabled] = AbilityRules.Disabled.DefaultText;
+        _message = "Every ability back to its defaults and enabled (press Apply).";
     }
 
     private void DrawAbilityCell(string name, bool disabled)
@@ -216,6 +257,36 @@ internal sealed partial class RulesMenu
         _message = null;
     }
 
+    private void DrawStat(AbilityStat stat, float indent)
+    {
+        Rule rule = stat.Rule;
+        GUILayout.BeginHorizontal();
+        GUILayout.Space(indent);
+        GUILayout.Label(indent > 0f ? $"↳ {stat.Name}" : stat.Name, GUILayout.Width(200f - indent));
+
+        GUI.enabled = !_readOnly;
+        if (rule.Type == RuleType.Bool)
+            _texts[rule] = GUILayout.Toggle(_texts[rule] == bool.TrueString, "") ? bool.TrueString : bool.FalseString;
+        else
+            _texts[rule] = GUILayout.TextField(_texts[rule], GUILayout.Width(90f));
+        GUI.enabled = true;
+
+        Color oldContent = GUI.contentColor;
+        if (IsPendingChange(rule))
+            GUI.contentColor = ChangedColor;
+        GUILayout.Label($"default {rule.DefaultText}");
+        GUI.contentColor = oldContent;
+        GUILayout.EndHorizontal();
+
+        if (!string.IsNullOrEmpty(stat.Description))
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(indent + 12f);
+            GUILayout.Label(stat.Description);
+            GUILayout.EndHorizontal();
+        }
+    }
+
     private void DrawStatsWindow(int id)
     {
         AbilityStatSet set = AbilityStats.Find(_editingStats);
@@ -230,33 +301,22 @@ internal sealed partial class RulesMenu
             : "Used by every player from the next match. Press Apply to save.");
 
         _statsScroll = GUILayout.BeginScrollView(_statsScroll);
-        foreach (AbilityStat stat in set.Stats)
+        // Each stat in its own frame, like the rules; stats of the same group (next to each other) share one, under
+        // the group's name.
+        for (int i = 0; i < set.Stats.Count;)
         {
-            Rule rule = stat.Rule;
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(stat.Name, GUILayout.Width(200f));
-
-            GUI.enabled = !_readOnly;
-            if (rule.Type == RuleType.Bool)
-                _texts[rule] = GUILayout.Toggle(_texts[rule] == bool.TrueString, "") ? bool.TrueString : bool.FalseString;
+            string group = set.Stats[i].Group;
+            GUILayout.BeginVertical(RuleFrameStyle);
+            if (group == null)
+                DrawStat(set.Stats[i++], 0f);
             else
-                _texts[rule] = GUILayout.TextField(_texts[rule], GUILayout.Width(90f));
-            GUI.enabled = true;
-
-            Color oldContent = GUI.contentColor;
-            if (IsPendingChange(rule))
-                GUI.contentColor = ChangedColor;
-            GUILayout.Label($"default {rule.DefaultText}");
-            GUI.contentColor = oldContent;
-            GUILayout.EndHorizontal();
-
-            if (!string.IsNullOrEmpty(stat.Description))
             {
-                GUILayout.BeginHorizontal();
-                GUILayout.Space(12f);
-                GUILayout.Label(stat.Description);
-                GUILayout.EndHorizontal();
+                GUILayout.Label(group);
+                for (; i < set.Stats.Count && set.Stats[i].Group == group; i++)
+                    DrawStat(set.Stats[i], 24f);
             }
+            GUILayout.EndVertical();
+            GUILayout.Space(RuleGap);
         }
         GUILayout.EndScrollView();
 

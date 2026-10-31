@@ -64,10 +64,14 @@ internal sealed class PinballSkill : Skill
 
     /// <summary>
     /// Spawns a fully charged ball that belongs to nobody (hits every player) and launches it at the full-charge
-    /// speed × <paramref name="speedMultiplier"/> (also used for its bounces off players).
+    /// speed × <paramref name="speedMultiplier"/> (also used for its bounces off players), or leaves it at rest if
+    /// <paramref name="direction"/> is zero. With <paramref name="tuning"/> it plays with those values instead of the
+    /// Pinball skill's (size, gravity and bounciness set on this ball), and <paramref name="sprite"/> replaces its look
+    /// (made for that size: its world size is the ball's diameter).
     /// Sim code only (deterministic). Returns null if the prefab doesn't exist yet.
     /// </summary>
-    internal PinballBall SpawnBall(Vec2 position, Vec2 direction, Fix speedMultiplier)
+    internal PinballBall SpawnBall(Vec2 position, Vec2 direction, Fix speedMultiplier, PinballTuning tuning = null,
+        Sprite sprite = null)
     {
         if (_ballPrefab == null)
             return null;
@@ -76,7 +80,20 @@ internal sealed class PinballSkill : Skill
         body.GetComponent<Item>().OwnerId = -1;
         body.GetComponent<Grenade>().Initialize(null);
         PinballBall ball = body.GetComponent<PinballBall>();
-        ball.LaunchStandalone(direction, Fix.One, speedMultiplier);
+        if (tuning != null)
+        {
+            ball.Tuning = tuning;
+            body.gravityScale = (Fix)tuning.BallGravity;
+            body.bounciness = (Fix)tuning.EnvironmentBouncePower;
+            body.GetComponent<DPhysicsCircle>().radius = (Fix)tuning.BallSize;
+            if (sprite == null && !Mathf.Approximately(tuning.BallSize, _ballSpriteSize))
+                sprite = BallSprite(tuning.BallSize);
+        }
+        if (sprite != null)
+            body.GetComponent<SpriteRenderer>().sprite = sprite;
+        ball.LaunchStandalone(direction == Vec2.zero ? Vec2.up : direction, Fix.One, speedMultiplier);
+        if (direction == Vec2.zero)
+            ball.Stop();
         return ball;
     }
 
@@ -88,7 +105,7 @@ internal sealed class PinballSkill : Skill
 
         _pinballAbility.Cooldown = (Fix)PinballSettings.AbilityCooldown;
         _ballPrefab.gravityScale = (Fix)PinballSettings.BallGravity;
-        _ballPrefab.bounciness = (Fix)PinballSettings.BouncePower;
+        _ballPrefab.bounciness = (Fix)PinballSettings.EnvironmentBouncePower;
         _ballPrefab.GetComponent<DPhysicsCircle>().radius = (Fix)PinballSettings.BallSize;
 
         if (!Mathf.Approximately(_ballSpriteSize, PinballSettings.BallSize))

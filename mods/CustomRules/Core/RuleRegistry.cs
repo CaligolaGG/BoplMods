@@ -77,6 +77,21 @@ public static class RuleRegistry
     }
 
     /// <summary>
+    /// When <paramref name="rule"/> (a bool rule) is turned on in the menu, the rule <paramref name="key"/> is set to
+    /// <paramref name="value"/> too (still pending until Apply, and the host can change it afterwards). E.g. a game mode
+    /// that usually goes with other rules.
+    /// </summary>
+    public static void AddPreset(Rule rule, string key, object value)
+    {
+        if (rule.Type != RuleType.Bool)
+            throw new ArgumentException("Only bool rules can have presets.");
+        Rule target = Find(key) ?? throw new ArgumentException($"No rule '{key}'.");
+        if (!target.TryParse(Rule.Format(value), out object parsed))
+            throw new ArgumentException($"Invalid value '{value}' for rule '{key}'.");
+        rule.Presets[target] = Rule.Format(parsed);
+    }
+
+    /// <summary>
     /// A value that isn't shown in the menu but is sent from the host with the rules, e.g. a skill's tuning so every
     /// player uses the host's. <paramref name="readLocal"/> gives this machine's value as text (invariant culture);
     /// <paramref name="applyActive"/> is called with the host's value at match start (also on the host itself).

@@ -14,6 +14,7 @@ internal static class BasicRules
     internal static Rule AbilitySpawnTime;
     internal static Rule AbilitySpawnCap;
     internal static Rule InfiniteRound;
+    internal static Rule SuddenDeathTime;
     internal static Rule PlayerBouncing;
     internal static Rule BounceOnEverything;
     internal static Rule BouncePower;
@@ -40,6 +41,10 @@ internal static class BasicRules
             "How many ability pickups can appear during a round (normally 3).");
         InfiniteRound = RuleRegistry.AddBool("InfiniteRound", "Infinite round duration", false,
             "No sudden death: the platforms never start falling, however long the round lasts.");
+        SuddenDeathTime = RuleRegistry.AddInt("InfiniteRound.SuddenDeathTime", "Sudden death time (s)", 120, 1, 3600,
+            "Seconds from the start of the round before sudden death (platforms start falling); normally 120. " +
+            "Not used while Infinite round duration is on.", parent: InfiniteRound);
+        SuddenDeathTime.ShownWhenParentOff = true;
         PlayerBouncing = RuleRegistry.AddBool("PlayerBouncing", "Player bouncing mode", false,
             "Slimes are solid: they bounce off each other instead of passing through.");
         BounceOnEverything = RuleRegistry.AddBool("PlayerBouncing.Everything", "Bounce on everything", false,

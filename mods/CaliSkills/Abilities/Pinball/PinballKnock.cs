@@ -6,7 +6,7 @@ namespace CaliSkills.Abilities.Pinball;
 /// <summary>Knocks a player back without killing them. Works for slimes and for ability forms (bow, rock...).</summary>
 internal static class PinballKnock
 {
-    internal static void Apply(GameObject victim, PlayerBody victimBody, Vec2 impulse)
+    internal static void Apply(GameObject victim, PlayerBody victimBody, Vec2 impulse, PinballTuning tuning)
     {
         // Slimes stick to any side of a platform (floor, wall, ceiling). Detach first, and make sure the knock
         // points away from that surface: otherwise the landing raycast re-attaches them on the next tick.
@@ -15,7 +15,7 @@ internal static class PinballKnock
         {
             StickyRoundedRectangle ground = physics.getAttachedGround();
             if (ground != null && !ground.IsDestroyed && victimBody != null)
-                impulse = AwayFromSurface(impulse, Vec2.NormalizedSafe(ground.currentNormal(victimBody)));
+                impulse = AwayFromSurface(impulse, Vec2.NormalizedSafe(ground.currentNormal(victimBody)), tuning);
             physics.UnGround();
         }
 
@@ -23,7 +23,7 @@ internal static class PinballKnock
         SlimeController slime = victim.GetComponent<SlimeController>();
         if (slime != null && slime.isActiveAndEnabled)
         {
-            slime.ApplyRagDoll((Fix)PinballSettings.KnockDuration, impulse, goFast: true);
+            slime.ApplyRagDoll((Fix)tuning.KnockDuration, impulse, goFast: true);
             return;
         }
 
@@ -34,9 +34,9 @@ internal static class PinballKnock
 
     /// <summary>
     /// Keeps the impulse's strength, but reflects any part going into the surface and guarantees at least
-    /// <see cref="PinballSettings.MinDetachFraction"/> of it points outward along the surface normal.
+    /// <see cref="PinballTuning.MinDetachFraction"/> of it points outward along the surface normal.
     /// </summary>
-    private static Vec2 AwayFromSurface(Vec2 impulse, Vec2 normal)
+    private static Vec2 AwayFromSurface(Vec2 impulse, Vec2 normal, PinballTuning tuning)
     {
         if (normal == Vec2.zero)
             return impulse;
@@ -46,7 +46,7 @@ internal static class PinballKnock
         if (along < Fix.Zero)
             impulse -= normal * ((Fix)2L * along);
 
-        Fix minOutward = strength * (Fix)PinballSettings.MinDetachFraction;
+        Fix minOutward = strength * (Fix)tuning.MinDetachFraction;
         along = Vec2.Dot(impulse, normal);
         if (along < minOutward)
             impulse += normal * (minOutward - along);

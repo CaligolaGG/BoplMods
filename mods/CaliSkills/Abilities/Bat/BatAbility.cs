@@ -32,6 +32,9 @@ public class BatAbility : AbilityMonoBehaviour
         Swinging,
     }
 
+    /// <summary>Seconds a deflected item (grenade, pinball...) spares its new owner, the batter.</summary>
+    private static readonly Fix OwnerGraceTime = (Fix)0.3f;
+
     private SlimeController _caster;
     private Player _player;
     private int _slot = -1;
@@ -272,6 +275,12 @@ public class BatAbility : AbilityMonoBehaviour
             {
                 if (projectile.GetComponent<Item>() is Item item)
                     item.OwnerId = _player.Id;
+                // Like a fresh throw: spared for a moment (it's still next to the bat), then it can hit you again.
+                if (projectile.GetComponent<Grenade>() is Grenade grenade)
+                {
+                    grenade.DetonatesOnOwner = false;
+                    grenade.DelayedEnableHurtOwner(OwnerGraceTime);
+                }
                 if (projectile.GetComponent<Projectile>() is Projectile shot)
                     shot.PlayerOwnerId = _player.Id;
                 AudioManager.Get()?.Play("hookshotOnHit");

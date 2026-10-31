@@ -3,13 +3,30 @@
   <PropertyGroup>
     <AssemblyName>CaliGameModes</AssemblyName>
     <RootNamespace>CaliGameModes</RootNamespace>
-    <Version>1.0.1</Version>
-    <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. First mode: Pinball mode.</Description>
+    <Version>1.1.0</Version>
+    <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. Pinball mode and Football mode.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caligamemodes</BepInExPluginGuid>
     <BepInExPluginName>CaliGameModes</BepInExPluginName>
   </PropertyGroup>
+
+  <!-- Football: scoreboard (IMGUI, bold text). -->
+  <ItemGroup>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Football maps (Map Loader zips), copied into BepInEx/plugins/Maps at start-up. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Maps\*.zip" LogicalName="CaliGameModes.Maps.%(Filename)%(Extension)" />
+  </ItemGroup>
 
   <!-- The mods this one builds on: installed separately (Thunderstore dependencies), so not copied with it. -->
   <ItemGroup>

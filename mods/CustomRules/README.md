@@ -32,6 +32,7 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | Ability spawning time × | 0.1–10: time between ability pickups appearing (normally 40 s; 0.5 = twice as often, 2 = half as often) | 1 |
 | Ability cap per round | 1–100: how many ability pickups can appear in a round | 3 |
 | Infinite round duration | on/off (no sudden death: platforms never fall) | off |
+| ↳ Sudden death time (s) | 1–3600: seconds before sudden death starts (shown even while Infinite round duration is off, which is when it's used) | 120 |
 | Player bouncing mode | on/off: slimes bounce off each other instead of passing through | off |
 | ↳ Bounce on everything | on/off: slimes bounce off platforms instead of sticking; each bounce gives back one jump (press jump in the air) | off |
 | ↳ Bounce power × | 0–5 | 1 |

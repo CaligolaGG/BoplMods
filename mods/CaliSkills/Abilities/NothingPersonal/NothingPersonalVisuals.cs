@@ -139,19 +139,23 @@ internal static class NothingPersonalVisuals
     }
 
     /// <summary>A small smoke cloud at <paramref name="position"/> that plays and fades out.</summary>
-    internal static void SpawnSmoke(Vec2 position, Fix scale)
+    internal static void SpawnSmoke(Vec2 position, Fix scale) =>
+        SpawnSmokeCloud(position, NothingPersonalSettings.SmokeSize * (float)scale, NothingPersonalSettings.SmokeDuration);
+
+    /// <summary>The Smoke ability's cloud (visual only): puffs up, then fades out after <paramref name="duration"/> s.</summary>
+    internal static void SpawnSmokeCloud(Vec2 position, float size, float duration)
     {
         if (_smokeFrames == null || _smokeFrames.Length == 0)
             return;
 
-        var go = new GameObject("NothingPersonalSmoke");
+        var go = new GameObject("CaliSkillsSmoke");
         go.transform.position = (Vector3)(Vector2)position;
-        go.transform.localScale = Vector3.one * NothingPersonalSettings.SmokeSize * (float)scale;
+        go.transform.localScale = Vector3.one * size;
         var renderer = go.AddComponent<SpriteRenderer>();
         if (_smokeMaterial != null)
             renderer.sharedMaterial = _smokeMaterial;
         renderer.sortingOrder = 10;
-        go.AddComponent<SmokePuff>().Init(renderer, _smokeFrames, NothingPersonalSettings.SmokeDuration);
+        go.AddComponent<SmokePuff>().Init(renderer, _smokeFrames, duration);
     }
 
     /// <summary>Whether another component on the same object has [RequireComponent] for it (Unity refuses to remove it then).</summary>

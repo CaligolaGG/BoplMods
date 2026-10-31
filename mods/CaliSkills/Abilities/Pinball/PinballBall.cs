@@ -11,7 +11,7 @@ namespace CaliSkills.Abilities.Pinball;
 /// Two phases:
 /// - held: ThrowItem2 keeps it in the slime's hand (physics not initialized yet); it grows with the charge;
 /// - thrown: ThrowItem2 initializes its physics and releases it; we give it the charge-scaled speed and the
-///   physics engine does the bouncing (bounciness 1, no friction) until <see cref="PinballSettings.AbilityDuration"/>.
+///   physics engine does the bouncing (bounciness 1, no friction) until <see cref="PinballTuning.AbilityDuration"/>.
 ///
 /// State fields are serialized on purpose: Unity's Instantiate copies serialized fields, so copies made by the
 /// Duplicator keep "already thrown", charge and remaining lifetime instead of acting like a fresh throw.
@@ -31,13 +31,16 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
     [SerializeField] private Fix _speedMultiplier = Fix.One;
     private readonly Dictionary<int, Fix> _lastHitTimeByPlayer = new();
 
+    /// <summary>The values this ball plays with (not serialized: Duplicator copies play with the Pinball skill's).</summary>
+    internal PinballTuning Tuning = PinballTuning.Ability;
+
     internal Vec2 Velocity => _body.HasBeenInitialized ? _body.velocity : _body.StartVelocity;
 
     internal Vec2 Position => _body.position;
 
-    private Fix Speed => (Fix)PinballSettings.BallSpeed * ChargeScale(PinballSettings.SpeedAtMinCharge, _charge) * _speedMultiplier;
+    private Fix Speed => (Fix)Tuning.BallSpeed * ChargeScale(Tuning.SpeedAtMinCharge, _charge) * _speedMultiplier;
 
-    private Fix Knockback => (Fix)PinballSettings.BallKnockback * ChargeScale(PinballSettings.KnockbackAtMinCharge, _charge);
+    private Fix Knockback => (Fix)Tuning.BallKnockback * ChargeScale(Tuning.KnockbackAtMinCharge, _charge);
 
     /// <summary>Linear from <paramref name="atMinCharge"/> (no charge) to 1 (full charge).</summary>
     private static Fix ChargeScale(float atMinCharge, Fix charge)
@@ -79,7 +82,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
             if (!_grenade.hasBeenThrown)
             {
                 // Held: grow in the hand with the charge (the hand position is set by ThrowItem2).
-                _body.Scale = _baseScale * ChargeScale(PinballSettings.SizeAtMinCharge, _charge);
+                _body.Scale = _baseScale * ChargeScale(Tuning.SizeAtMinCharge, _charge);
                 return;
             }
             Launch(hasThrower ? Vec2.NormalizedSafe(thrower.dir) : Vec2.zero);
@@ -87,7 +90,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
 
         // Same clock as vanilla projectiles, so time stop freezes the countdown too.
         _ageSinceThrow += simDeltaTime * GameTime.PlayerTimeScale;
-        if (_ageSinceThrow >= (Fix)PinballSettings.AbilityDuration)
+        if (Tuning.AbilityDuration > 0f && _ageSinceThrow >= (Fix)Tuning.AbilityDuration)
             Updater.DestroyFix(gameObject);
     }
 
@@ -104,7 +107,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
     /// </summary>
     private void Launch(Vec2 dir)
     {
-        _body.Scale = _baseScale * ChargeScale(PinballSettings.SizeAtMinCharge, _charge);
+        _body.Scale = _baseScale * ChargeScale(Tuning.SizeAtMinCharge, _charge);
         if (dir == Vec2.zero)
             dir = Vec2.up;
         _body.velocity = dir * Speed;
@@ -119,8 +122,14 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
         _baseScale = _body.Scale;
         GetComponent<DPhysicsCircle>().ManualInit();
         _grenade.hasBeenThrown = true;
+        // No thrower to spare. Without this the "spare the owner" check would never end: if something makes a
+        // player the owner (the Wooden Bat's deflection does), the ball would pass through them for good.
+        _grenade.DetonatesOnOwner = true;
         Launch(Vec2.NormalizedSafe(dir));
     }
+
+    /// <summary>Leaves a launched ball at rest (e.g. a football waiting for its first kick).</summary>
+    internal void Stop() => _body.velocity = Vec2.zero;
 
     public void OnCollide(CollisionInformation collision)
     {
@@ -165,7 +174,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
         Vec2 knockDir = Vec2.NormalizedSafe(Velocity);
         if (knockDir == Vec2.zero)
             knockDir = Vec2.NormalizedSafe(victimPos - Position);
-        PinballKnock.Apply(other.gameObject, victimBody, knockDir * Knockback);
+        PinballKnock.Apply(other.gameObject, victimBody, knockDir * Knockback, Tuning);
 
         // Bumper bounce: reflect the ball's velocity on the line between the two centers.
         Vec2 normal = Vec2.NormalizedSafe(Position - victimPos);
@@ -173,7 +182,9 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
         {
             Vec2 v = Velocity;
             Vec2 reflected = v - normal * ((Fix)2L * Vec2.Dot(v, normal));
-            _body.velocity = Vec2.NormalizedSafe(reflected) * Speed * (Fix)PinballSettings.BouncePower;
+            // A ball at rest (e.g. a football before its first kick) flies off away from the player.
+            Vec2 dir = Vec2.NormalizedSafe(reflected);
+            _body.velocity = (dir == Vec2.zero ? normal : dir) * Speed * (Fix)Tuning.PlayerBouncePower;
         }
 
         AudioManager.Get().Play("rockBounce");
@@ -183,7 +194,7 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
     private bool TryRegisterHit(int playerId)
     {
         if (_lastHitTimeByPlayer.TryGetValue(playerId, out Fix lastHit) &&
-            _ageSinceThrow - lastHit < (Fix)PinballSettings.HitCooldownPerPlayer)
+            _ageSinceThrow - lastHit < (Fix)Tuning.HitCooldownPerPlayer)
             return false;
 
         _lastHitTimeByPlayer[playerId] = _ageSinceThrow;

@@ -1,6 +1,8 @@
 using BepInEx;
 using BepInEx.Logging;
+using CaliGameModes.Maps;
 using CaliGameModes.Modes;
+using CaliGameModes.Modes.Football;
 using CustomRules.Core;
 using HarmonyLib;
 using UnityEngine;
@@ -11,6 +13,7 @@ namespace CaliGameModes;
 [BepInProcess("BoplBattle.exe")]
 [BepInDependency(CustomRules.Plugin.Guid)]
 [BepInDependency("com.caligola.caliskills")]
+[BepInDependency(MapLoaderBridge.Guid, BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
@@ -24,9 +27,12 @@ public class Plugin : BaseUnityPlugin
 
         Section = RuleRegistry.AddSection("CaliGameModes", new Color(0.55f, 0.8f, 1f));
         PinballMode.Register();
+        FootballMode.Register();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
-        new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll(typeof(Plugin).Assembly);
+        var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        harmony.PatchAll(typeof(Plugin).Assembly);
+        MapLoaderBridge.Init(harmony);
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }

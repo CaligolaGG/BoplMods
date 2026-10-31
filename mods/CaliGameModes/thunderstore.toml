@@ -7,7 +7,7 @@ schemaVersion = "0.0.1"
 namespace = "caligola"
 name = "CaliGameModes"
 versionNumber = "1.0.0"
-description = "Game modes set by the lobby host in the CustomRules menu. Pinball mode: pinballs are shot into the arena from the sides. Every player in the lobby needs it."
+description = "Game modes set by the lobby host in the CustomRules menu. Pinball mode (pinballs shot into the arena) and Football mode (needs Map Loader). Every player in the lobby needs it."
 websiteUrl = ""
 containsNsfwContent = false
 

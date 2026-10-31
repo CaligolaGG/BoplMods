@@ -14,7 +14,7 @@ namespace CaliSkills.Abilities.Pinball;
 /// </summary>
 internal static class PinballSettings
 {
-    [Description("Launch speed at full charge (units/s). With BouncePower 1 the ball keeps it while bouncing.")]
+    [Description("Launch speed at full charge (units/s). With bounce powers 1 the ball keeps it while bouncing.")]
     public static float BallSpeed = 40f;
 
     [Description("Ball radius at full charge (units), hitbox and sprite.")]
@@ -42,9 +42,14 @@ internal static class PinballSettings
 
     // --- Extra tuning ---
 
-    [Description("How much the ball bounces off things: 1 = keeps its speed, <1 slows down each bounce, >1 speeds up. " +
-                 "On surfaces the bouncier of the two counts.")]
-    public static float BouncePower = 1f;
+    [Category("Bounce power")]
+    [Description("Bounce off everything but players (platforms, items, abilities): 1 = keeps its speed, <1 slows down " +
+                 "each bounce, >1 speeds up. On surfaces the bouncier of the two counts.")]
+    public static float EnvironmentBouncePower = 1f;
+
+    [Category("Bounce power")]
+    [Description("Bounce off players it hits: 1 = keeps its speed, <1 slows down, >1 speeds up.")]
+    public static float PlayerBouncePower = 1f;
 
     [Description("Gravity on the ball (0 = flies straight, 1 = normal gravity).")]
     public static float BallGravity = 0.8f;

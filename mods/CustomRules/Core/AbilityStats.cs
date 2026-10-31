@@ -13,7 +13,8 @@ namespace CustomRules.Core;
 ///
 /// Register in your plugin's Awake (with [BepInDependency(CustomRules.Plugin.Guid)], soft or hard, so this mod loads
 /// first). Every public static float/int/bool field of the settings class becomes a stat, with its [Description] as
-/// hint and its value at registration as default. Each stat is a hidden rule ("Stat.&lt;ability&gt;.&lt;field&gt;" in the
+/// hint and its value at registration as default. Fields with the same [Category] (next to each other) are shown
+/// together in one frame, under the category's name. Each stat is a hidden rule ("Stat.&lt;ability&gt;.&lt;field&gt;" in the
 /// [AbilityStats] section of the config), so it's saved, sent by the host and kept in profiles like the other rules.
 /// At match start, on every machine, the fields are set to the host's values and <c>onChanged</c> is called (re-apply
 /// values baked into prefabs there).
@@ -23,6 +24,9 @@ public static class AbilityStats
     private const string ConfigSection = "AbilityStats";
 
     private static readonly List<AbilityStatSet> Sets = new();
+    private static readonly List<StatsButton> ButtonList = new();
+
+    internal static IReadOnlyList<StatsButton> Buttons => ButtonList;
 
     /// <param name="abilityName">The ability's name in the game's ability list (what the ability grid shows).</param>
     /// <param name="settingsType">Static class whose public static float/int/bool fields are the stats.</param>
@@ -49,7 +53,8 @@ public static class AbilityStats
             string description = field.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
             Rule rule = RuleRegistry.AddHidden($"Stat.{Id(abilityName)}.{field.Name}", type.Value, field.GetValue(null),
                 $"{abilityName}: {description}", ConfigSection);
-            set.Stats.Add(new AbilityStat(field.Name, field, rule, description));
+            string group = field.GetCustomAttribute<CategoryAttribute>()?.Category;
+            set.Stats.Add(new AbilityStat(field.Name, field, rule, description, group));
         }
         Add(set);
     }
@@ -71,6 +76,18 @@ public static class AbilityStats
         }
         Add(set);
         return set;
+    }
+
+    /// <summary>
+    /// A button in the rules menu, under the bool rule <paramref name="parent"/> (while it's on), that opens the stats
+    /// window of <paramref name="statsName"/>: a set registered with <see cref="Register"/>, which doesn't have to be an
+    /// ability (e.g. a game mode's ball). Its stats work like any ability's: host-set, saved, synced.
+    /// </summary>
+    public static void AddMenuButton(Rule parent, string label, string statsName, string description)
+    {
+        if (parent == null || parent.Type != RuleType.Bool)
+            throw new ArgumentException("A stats button needs a bool parent rule.");
+        ButtonList.Add(new StatsButton(parent, label, statsName, description));
     }
 
     private static void Add(AbilityStatSet set)
@@ -159,12 +176,13 @@ internal sealed class AbilityStatSet
 
 internal sealed class AbilityStat
 {
-    public AbilityStat(string name, FieldInfo field, Rule rule, string description)
+    public AbilityStat(string name, FieldInfo field, Rule rule, string description, string group = null)
     {
         Name = name;
         Field = field;
         Rule = rule;
         Description = description;
+        Group = group;
     }
 
     /// <summary>Shown in the stats window.</summary>
@@ -174,6 +192,28 @@ internal sealed class AbilityStat
     public FieldInfo Field { get; }
 
     public Rule Rule { get; }
+
+    public string Description { get; }
+
+    /// <summary>The field's [Category]: stats of the same group next to each other share a frame. Null if none.</summary>
+    public string Group { get; }
+}
+
+internal sealed class StatsButton
+{
+    public StatsButton(Rule parent, string label, string statsName, string description)
+    {
+        Parent = parent;
+        Label = label;
+        StatsName = statsName;
+        Description = description;
+    }
+
+    public Rule Parent { get; }
+
+    public string Label { get; }
+
+    public string StatsName { get; }
 
     public string Description { get; }
 }

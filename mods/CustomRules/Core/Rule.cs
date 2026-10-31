@@ -83,6 +83,12 @@ public sealed class Rule
     /// </summary>
     internal bool Hidden { get; set; }
 
+    /// <summary>A sub rule drawn under its parent even while the parent is off (it applies either way).</summary>
+    internal bool ShownWhenParentOff { get; set; }
+
+    /// <summary>Bool rules: other rules' values set in the menu when this one is turned on (<see cref="RuleRegistry.AddPreset"/>).</summary>
+    internal Dictionary<Rule, string> Presets { get; } = new();
+
     public string ActiveText { get; private set; }
 
     public float ActiveFloat { get; private set; }
@@ -97,6 +103,14 @@ public sealed class Rule
     public bool IsOn => ActiveBool && (Parent == null || Parent.IsOn);
 
     internal string LocalText => Format(Entry.BoxedValue);
+
+    /// <summary>
+    /// The value as set in the lobby right now, before a match makes it active: the host's for online guests, this
+    /// machine's otherwise. For lobby-side decisions (e.g. which maps to offer); gameplay reads the active value.
+    /// </summary>
+    public string LobbyText => RulesSync.LobbyText(this);
+
+    public bool LobbyBool => LobbyText == bool.TrueString;
 
     internal string DefaultText => Format(DefaultValue);
 
