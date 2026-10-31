@@ -29,6 +29,8 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | Player speed × | 0.1–5 | 1 |
 | Permanent invisibility | on/off | off |
 | Disable ability spawning | on/off (no pickups during the round, none dropped on death) | off |
+| Ability spawning time × | 0.1–10: time between ability pickups appearing (normally 40 s; 0.5 = twice as often, 2 = half as often) | 1 |
+| Ability cap per round | 1–100: how many ability pickups can appear in a round | 3 |
 | Infinite round duration | on/off (no sudden death: platforms never fall) | off |
 | Player bouncing mode | on/off: slimes bounce off each other instead of passing through | off |
 | ↳ Bounce on everything | on/off: slimes bounce off platforms instead of sticking; each bounce gives back one jump (press jump in the air) | off |
@@ -39,8 +41,15 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | Extra Jump | on/off: jump again in mid-air (replaces the ExtraJump mod: uninstall it) | off |
 | ↳ Air jumps | 1–10 | 2 |
 
+## Abilities
+
+**Rules tab → Abilities** opens a grid of every ability:
+- **Right-click** an ability to change its stats (for abilities from mods that offer them, e.g. CaliSkills: speed, cooldown...). Every player uses the host's values. Abilities with changed stats get a **yellow border** (a yellow ring in the character select grid).
+- **Middle-click** an ability to **disable** it (red "no" sign) or enable it again. Disabled abilities can't be picked and Random never gives them. The host can also middle-click abilities directly in the character select grid.
+- Press **Apply** to save. Stats and disabled abilities are saved in profiles too.
+
 ## Notes
 
 - **Every player in the lobby needs this mod** (and the same rule mods, e.g. CaliGameModes), otherwise the game desyncs.
 - Replays of matches with custom rules don't play back correctly.
-- Other mods can add their own rules to the window (see CaliGameModes).
+- Other mods can add their own rules to the window (see CaliGameModes), and ability mods can offer stats (`AbilityStats.Register`, see CaliSkills).

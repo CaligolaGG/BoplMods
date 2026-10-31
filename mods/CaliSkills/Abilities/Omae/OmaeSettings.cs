@@ -3,14 +3,14 @@ using System.ComponentModel;
 namespace CaliSkills.Abilities.Omae;
 
 /// <summary>
-/// Tuning values for the "Omae wa mo shindeiru" skill. These are the defaults: change them here and rebuild, or live
-/// in game by right-clicking the skill in the ability grid (see Core/SkillSettingsEditor.cs).
-/// All players in a match must use the same values (the game simulation is deterministic lockstep).
+/// Tuning values for the "Omae wa mo shindeiru" skill. These are the defaults: change them here and rebuild, or, with CustomRules,
+/// as the lobby host in the rules menu (Abilities → right-click the skill; see Core/CustomRulesStats.cs). Every public
+/// static float/int/bool field is a stat there, with its [Description] as hint. Every player uses the host's values.
 /// </summary>
 internal static class OmaeSettings
 {
     [Description("Seconds before the skill can be used again.")]
-    public static float AbilityCooldown = 5f;
+    public static float AbilityCooldown = 6f;
 
     [Description("Seconds a poked player has left before dying.")]
     public static float MarkDuration = 20f;

@@ -34,6 +34,8 @@ internal static class SkillRegistry
 
     internal static Skill Find(string name) => Skills.Find(s => s.Name == name);
 
+    internal static IReadOnlyList<Skill> All => Skills;
+
     internal static void RegisterEverywhere()
     {
         foreach (NamedSpriteList list in Resources.FindObjectsOfTypeAll<NamedSpriteList>())

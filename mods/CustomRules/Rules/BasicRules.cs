@@ -11,6 +11,8 @@ internal static class BasicRules
     internal static Rule PlayerSpeed;
     internal static Rule PermanentInvisibility;
     internal static Rule DisableAbilitySpawning;
+    internal static Rule AbilitySpawnTime;
+    internal static Rule AbilitySpawnCap;
     internal static Rule InfiniteRound;
     internal static Rule PlayerBouncing;
     internal static Rule BounceOnEverything;
@@ -22,7 +24,7 @@ internal static class BasicRules
     {
         CooldownMultiplier = RuleRegistry.AddFloat("CooldownMultiplier", "Cooldowns ×", 1f, 0f, 10f,
             "Multiplies every ability's cooldown (2 = double, 0.5 = half, 0 = no cooldown).");
-        PlayerSize = RuleRegistry.AddInt("PlayerSize", "Player size", SizeRule.NormalSize, 1, 5,
+        PlayerSize = RuleRegistry.AddInt("PlayerSize", "Player size", SizeRule.NormalSize, 0, 6,
             "Starting size of every player: 3 = normal, each step up/down = one Growth ray / Shrink ray hit at the start of the round.");
         Gravity = RuleRegistry.AddFloat("Gravity", "Gravity ×", 1f, 0f, 5f,
             "Multiplies gravity for players and objects (arrows, grenades...).");
@@ -32,6 +34,10 @@ internal static class BasicRules
             "Every player is always invisible, as if the Invisibility ability never ended.");
         DisableAbilitySpawning = RuleRegistry.AddBool("DisableAbilitySpawning", "Disable ability spawning", false,
             "No ability pickups: none appear during the round, and players don't drop their ability when they die.");
+        AbilitySpawnTime = RuleRegistry.AddFloat("AbilitySpawnTime", "Ability spawning time ×", 1f, 0.1f, 10f,
+            "Multiplies the time between ability pickups appearing (0.5 = twice as often, 2 = half as often).");
+        AbilitySpawnCap = RuleRegistry.AddInt("AbilitySpawnCap", "Ability cap per round", 3, 1, 100,
+            "How many ability pickups can appear during a round (normally 3).");
         InfiniteRound = RuleRegistry.AddBool("InfiniteRound", "Infinite round duration", false,
             "No sudden death: the platforms never start falling, however long the round lasts.");
         PlayerBouncing = RuleRegistry.AddBool("PlayerBouncing", "Player bouncing mode", false,

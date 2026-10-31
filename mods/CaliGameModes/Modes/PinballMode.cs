@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
 using BoplFixedMath;
 using CaliSkills.Abilities.Pinball;
 using CustomRules.Core;
@@ -11,9 +8,9 @@ namespace CaliGameModes.Modes;
 
 /// <summary>
 /// Pinball mode: every few seconds a pinball is shot into the arena from the left or right edge.
-/// The balls are the CaliSkills Pinball (fully charged, owned by nobody, so they knock every player). Every Pinball
-/// setting is synced from the host with the rules, so the spawned balls (and the Pinball ability) behave like the
-/// host's Pinball on every machine.
+/// The balls are the CaliSkills Pinball (fully charged, owned by nobody, so they knock every player). The Pinball's
+/// settings are ability stats of CustomRules (rules menu → Abilities), so the balls behave like the host's Pinball on
+/// every machine.
 /// </summary>
 internal static class PinballMode
 {
@@ -27,34 +24,6 @@ internal static class PinballMode
             section: Plugin.Section);
         SpawnInterval = RuleRegistry.AddFloat("PinballMode.SpawnInterval", "Spawn timing (s)", 1f, 0.25f, 60f,
             "Seconds between two pinballs.", parent: Enabled);
-
-        foreach (FieldInfo field in typeof(PinballSettings).GetFields(BindingFlags.Public | BindingFlags.Static)
-                     .Where(f => !f.IsInitOnly && !f.IsLiteral))
-        {
-            RuleRegistry.AddSyncedValue("Pinball." + field.Name,
-                () => Format(field.GetValue(null)),
-                text => SetField(field, text));
-        }
-
-        // Re-bake the values the Pinball keeps on its prefabs (cooldown, size, gravity, bounce) after syncing.
-        RuleRegistry.RulesActivated += () => PinballSkill.Instance?.OnSettingsChanged();
-    }
-
-    private static string Format(object value) => value switch
-    {
-        float f => f.ToString("R", CultureInfo.InvariantCulture),
-        int n => n.ToString(CultureInfo.InvariantCulture),
-        _ => value?.ToString() ?? "",
-    };
-
-    private static void SetField(FieldInfo field, string text)
-    {
-        if (field.FieldType == typeof(float) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float f))
-            field.SetValue(null, f);
-        else if (field.FieldType == typeof(int) && int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
-            field.SetValue(null, n);
-        else if (field.FieldType == typeof(bool) && bool.TryParse(text, out bool b))
-            field.SetValue(null, b);
     }
 
     /// <summary>Every level, on every machine: add the spawner (a scene object, gone with the level).</summary>

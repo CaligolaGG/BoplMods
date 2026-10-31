@@ -13,7 +13,8 @@ namespace CustomRules.UI;
 /// "Custom rules" button on the character select screens (local and online lobby) and the rules window (IMGUI).
 /// The host (or, locally, whoever plays) edits the rules; online clients see the host's rules read-only.
 /// Rules registered with a parent are shown under it, only while the parent is on (sub menu).
-/// Two tabs: Rules, and Profiles (saved sets of rules, see RulesMenu.Profiles.cs).
+/// Two tabs: Rules, and Profiles (saved sets of rules, see RulesMenu.Profiles.cs). The Rules tab also opens the
+/// abilities window (stats and disabled abilities, see RulesMenu.Abilities.cs).
 /// </summary>
 internal sealed partial class RulesMenu : MonoBehaviour
 {
@@ -61,6 +62,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
         _message = _readOnly && RulesSync.HostValues == null ? "The host's rules haven't arrived yet." : null;
         _tab = 0;
         _picking = null;
+        ResetAbilitiesWindow();
         ResetProfilesTab();
         _scroll = Vector2.zero;
         _window = default;
@@ -95,7 +97,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
             Close();
         else if (escape && _picking != null)
             _picking = null; // Esc closes the ability picker first
-        else if (escape)
+        else if (escape && !CloseTopAbilitiesWindow()) // then the stats / abilities windows
             Close();
     }
 
@@ -127,13 +129,13 @@ internal sealed partial class RulesMenu : MonoBehaviour
 
         if (_window.width <= 0f)
         {
-            float h = Mathf.Min(height - 40f, 200f + RuleRegistry.Rules.Count * 64f + RuleRegistry.Sections.Count * 60f);
+            float h = Mathf.Min(height - 40f, 280f + RuleRegistry.Rules.Count(r => !r.Hidden) * 64f + RuleRegistry.Sections.Count * 60f);
             _window = new Rect((width - WindowWidth) / 2f, (height - h) / 2f, WindowWidth, h);
         }
-        // Only one modal window at a time: the option picker replaces the rules window while it's open.
+        // Only one modal window at a time: the option picker and the abilities windows replace the rules window.
         if (_picking != null)
             DrawPickerWindow(width, height);
-        else
+        else if (!DrawAbilitiesWindows(width, height))
             _window = GUI.ModalWindow(WindowId, _window, DrawWindow, _readOnly ? "Custom rules (set by the host)" : "Custom rules");
     }
 
@@ -165,8 +167,9 @@ internal sealed partial class RulesMenu : MonoBehaviour
             : "Applies to everyone in the match. Online, the host's rules are used (every player needs the same rule mods).");
 
         _scroll = GUILayout.BeginScrollView(_scroll);
-        foreach (Rule rule in RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == null))
+        foreach (Rule rule in RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == null && !r.Hidden))
             DrawRule(rule, 0);
+        DrawAbilitiesField();
         foreach (RuleSection section in RuleRegistry.Sections)
             DrawSection(section);
         GUILayout.EndScrollView();
@@ -196,7 +199,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
     /// <summary>A mod's own rules: set apart by a gap, in a box tinted with the section's color, under its title.</summary>
     private void DrawSection(RuleSection section)
     {
-        List<Rule> rules = RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == section).ToList();
+        List<Rule> rules = RuleRegistry.Rules.Where(r => r.Parent == null && r.Section == section && !r.Hidden).ToList();
         if (rules.Count == 0)
             return;
 
@@ -266,7 +269,7 @@ internal sealed partial class RulesMenu : MonoBehaviour
         // Sub menu: children only while this (bool) rule is on.
         if (rule.Type == RuleType.Bool && _texts[rule] == bool.TrueString)
         {
-            foreach (Rule child in RuleRegistry.Rules.Where(r => r.Parent == rule))
+            foreach (Rule child in RuleRegistry.Rules.Where(r => r.Parent == rule && !r.Hidden))
                 DrawRule(child, depth + 1);
         }
 
@@ -339,7 +342,10 @@ internal sealed partial class RulesMenu : MonoBehaviour
         }
 
         RulesSync.BroadcastIfHost();
-        Plugin.Log.LogInfo("Rules changed: " + string.Join(", ", parsed.Keys.Select(r => $"{r.Key}={r.LocalText}")));
+        // Hidden rules (ability stats...) are many: only the ones not at their default.
+        Plugin.Log.LogInfo("Rules changed: " + string.Join(", ", parsed.Keys
+            .Where(r => !r.Hidden || r.LocalText != r.DefaultText)
+            .Select(r => $"{r.Key}={r.LocalText}")));
         _message = $"Applied at {DateTime.Now:HH:mm:ss}.";
         return true;
     }

@@ -25,13 +25,14 @@ internal abstract class Skill
     public abstract GameObject CreatePrefab(NamedSpriteList abilityList);
 
     /// <summary>
-    /// Static class whose public static float/int/bool fields are editable in game
-    /// (right-click the skill in the ability grid). Null = not editable.
+    /// Static class whose public static float/int/bool fields are the skill's stats: with CustomRules installed, the
+    /// host edits them in its rules menu (Abilities → right-click the skill) and every player uses the host's values.
+    /// Null = not editable.
     /// </summary>
     public virtual Type SettingsType => null;
 
     /// <summary>
-    /// Called after the in-game editor changed settings. Re-apply values that were baked into
+    /// Called at match start after the settings were set to the host's values. Re-apply values that were baked into
     /// prefabs at creation (cooldown, sizes, physics...); values read at runtime need nothing.
     /// </summary>
     public virtual void OnSettingsChanged()

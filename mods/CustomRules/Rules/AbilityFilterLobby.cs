@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CustomRules.Rules;
 
 /// <summary>
-/// "No / Only offensive abilities" in character select: abilities the rule doesn't allow are greyed out and can't be
+/// "No / Only offensive abilities" and disabled abilities in character select: abilities the rule doesn't allow are greyed out and can't be
 /// picked (clicking or confirming one in the grid is refused, the slot arrows skip them). A player whose slot still
 /// holds one (picked before the host changed the rule) can't get ready, is un-readied if already ready, and the match
 /// can't start while anyone holds one.
@@ -21,7 +21,8 @@ internal static class AbilityFilterLobby
     {
         if (list == null || index < 0 || index >= list.sprites.Count)
             return true;
-        return AbilityRules.Allowed(list.sprites[index], AbilityRules.LobbyNoOffensive, AbilityRules.LobbyOnlyOffensive);
+        return AbilityRules.Allowed(list.sprites[index], AbilityRules.LobbyNoOffensive, AbilityRules.LobbyOnlyOffensive,
+            AbilityRules.LobbyDisabled);
     }
 
     /// <summary>Greys out the grid entries that can't be picked.</summary>

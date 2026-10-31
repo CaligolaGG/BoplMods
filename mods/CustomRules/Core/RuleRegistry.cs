@@ -90,6 +90,28 @@ public static class RuleRegistry
 
     public static Rule Find(string key) => RuleList.FirstOrDefault(r => r.Key == key);
 
+    /// <summary>
+    /// A rule with no row in the Rules tab (see <see cref="Rule.Hidden"/>), saved in <paramref name="configSection"/>.
+    /// Numbers aren't range-limited (only to ±1e9).
+    /// </summary>
+    internal static Rule AddHidden(string key, RuleType type, object defaultValue, string description, string configSection)
+    {
+        if (Find(key) != null || SyncedList.Any(s => s.Key == key))
+            throw new ArgumentException($"Duplicate rule key '{key}'.");
+
+        ConfigEntryBase entry = type switch
+        {
+            RuleType.Float => Plugin.RulesConfig.Bind(configSection, key, (float)defaultValue, description),
+            RuleType.Int => Plugin.RulesConfig.Bind(configSection, key, (int)defaultValue, description),
+            RuleType.Bool => Plugin.RulesConfig.Bind(configSection, key, (bool)defaultValue, description),
+            _ => Plugin.RulesConfig.Bind(configSection, key, (string)defaultValue, description),
+        };
+
+        var rule = new Rule(key, key, description, type, defaultValue, -1e9f, 1e9f, null, null, entry) { Hidden = true };
+        RuleList.Add(rule);
+        return rule;
+    }
+
     private static Rule Add(string key, string label, string description, RuleType type, object defaultValue,
         float min, float max, Rule parent, RuleSection section)
     {

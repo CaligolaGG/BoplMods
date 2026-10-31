@@ -10,6 +10,8 @@ namespace CustomRules.Rules;
 /// Rules about which abilities players get:
 /// - "No offensive abilities" / "Only offensive abilities" (exclusive): abilities not allowed can't be picked in
 ///   character select (<see cref="AbilityFilterLobby"/>), and Random (also ability pickups) only draws allowed ones.
+/// - Disabled abilities (middle-click an ability in the lobby's ability grid or the rules menu's abilities window): like
+///   the filters, they can't be picked and Random never draws them. Kept as a hidden rule, a list of names.
 /// - "Preselect abilities" section: a chosen ability per slot is forced onto every player (wins over the filters).
 /// Abilities are looked up by name in the game's ability list (the "abilityIcons" NamedSpriteList), whose entries say
 /// whether they're offensive (CaliSkills: Omae wa mo shindeiru is, Pinball isn't). Entry 0 is the empty slot, entry 1
@@ -22,6 +24,7 @@ internal static class AbilityRules
 
     internal static Rule NoOffensive;
     internal static Rule OnlyOffensive;
+    internal static Rule Disabled;
     internal static readonly Rule[] Preselect = new Rule[3];
 
     internal static void Register()
@@ -31,6 +34,9 @@ internal static class AbilityRules
         OnlyOffensive = RuleRegistry.AddBool("OnlyOffensiveAbilities", "Only offensive abilities", false,
             "Non-offensive abilities can't be picked (greyed out), and Random only gives offensive ones.");
         RuleRegistry.MakeExclusive(NoOffensive, OnlyOffensive);
+        Disabled = RuleRegistry.AddHidden("DisabledAbilities", RuleType.Choice, "",
+            "Abilities nobody can pick or get from Random, separated by '|' (middle-click them in the ability grid).",
+            "Rules");
 
         RuleSection section = RuleRegistry.AddSection("Preselect abilities", new Color(1f, 0.75f, 0.4f));
         for (int i = 0; i < Preselect.Length; i++)
@@ -42,10 +48,10 @@ internal static class AbilityRules
         }
     }
 
-    private static NamedSpriteList AbilityList => SteamManager.instance != null ? SteamManager.instance.abilityIcons : null;
+    internal static NamedSpriteList AbilityList => SteamManager.instance != null ? SteamManager.instance.abilityIcons : null;
 
-    /// <summary>Random + every real ability, for the preselect pickers.</summary>
-    private static IReadOnlyList<string> AbilityNames()
+    /// <summary>Random + every real ability, for the preselect pickers and the abilities window.</summary>
+    internal static IReadOnlyList<string> AbilityNames()
     {
         NamedSpriteList list = AbilityList;
         if (list == null)
@@ -53,7 +59,7 @@ internal static class AbilityRules
         return list.sprites.Skip(1).Select(s => s.name).Where(n => !NeverRandom.Contains(n)).ToList();
     }
 
-    private static Sprite AbilityIcon(string name)
+    internal static Sprite AbilityIcon(string name)
     {
         NamedSpriteList list = AbilityList;
         if (list == null || string.IsNullOrEmpty(name))
@@ -66,12 +72,16 @@ internal static class AbilityRules
         entry.associatedGameObject != null && entry.associatedGameObject.GetComponent<RandomAbility>() != null;
 
     /// <summary>
-    /// Whether the offensive filter allows this ability. Random is always allowed (its draws are filtered); so is the
-    /// empty slot.
+    /// Whether the rules allow this ability: not disabled, and passing the offensive filter. Random passes the filter
+    /// (its draws are filtered) but can be disabled. The empty slot is always allowed.
     /// </summary>
-    internal static bool Allowed(NamedSprite entry, bool noOffensive, bool onlyOffensive)
+    internal static bool Allowed(NamedSprite entry, bool noOffensive, bool onlyOffensive, ICollection<string> disabled)
     {
-        if (entry.associatedGameObject == null || IsRandom(entry))
+        if (entry.associatedGameObject == null)
+            return true;
+        if (disabled.Contains(entry.name))
+            return false;
+        if (IsRandom(entry))
             return true;
         if (noOffensive)
             return !entry.isOffensiveAbility;
@@ -81,14 +91,57 @@ internal static class AbilityRules
     }
 
     /// <summary>In the match: the active (host's) values.</summary>
-    private static bool Allowed(NamedSprite entry) => Allowed(entry, NoOffensive.ActiveBool, OnlyOffensive.ActiveBool);
+    private static bool Allowed(NamedSprite entry) =>
+        Allowed(entry, NoOffensive.ActiveBool, OnlyOffensive.ActiveBool, ParseNames(Disabled.ActiveText));
 
-    private static bool FilterActive => NoOffensive.ActiveBool || OnlyOffensive.ActiveBool;
+    private static bool FilterActive => NoOffensive.ActiveBool || OnlyOffensive.ActiveBool || ParseNames(Disabled.ActiveText).Count > 0;
 
     // In character select: the rules as set in the lobby (the host's for online guests), not yet active.
     internal static bool LobbyNoOffensive => RulesSync.LobbyBool(NoOffensive);
     internal static bool LobbyOnlyOffensive => RulesSync.LobbyBool(OnlyOffensive);
-    internal static bool LobbyFilterActive => LobbyNoOffensive || LobbyOnlyOffensive;
+    internal static HashSet<string> LobbyDisabled => ParseNames(RulesSync.LobbyText(Disabled));
+    internal static bool LobbyFilterActive => LobbyNoOffensive || LobbyOnlyOffensive || LobbyDisabled.Count > 0;
+
+    private static string _parsedText;
+    private static HashSet<string> _parsedNames = new();
+
+    /// <summary>The names in a disabled list ("a|b|c"). Cached: asked every frame for every ability in the lobby.</summary>
+    internal static HashSet<string> ParseNames(string text)
+    {
+        if (text != _parsedText)
+        {
+            _parsedNames = new HashSet<string>((text ?? "").Split('|').Where(n => n.Length > 0));
+            _parsedText = text;
+        }
+        return _parsedNames;
+    }
+
+    /// <summary>A disabled list with <paramref name="name"/> added or removed (names kept in ability list order).</summary>
+    internal static string ToggleName(string text, string name)
+    {
+        var names = new HashSet<string>(ParseNames(text));
+        if (!names.Remove(name))
+            names.Add(name);
+        NamedSpriteList list = AbilityList;
+        IEnumerable<string> ordered = list != null
+            ? names.OrderBy(n => list.sprites.FindIndex(s => s.name == n) is int i && i >= 0 ? i : int.MaxValue).ThenBy(n => n)
+            : names.OrderBy(n => n);
+        return string.Join("|", ordered);
+    }
+
+    /// <summary>
+    /// Lobby middle-click: disables or re-enables an ability in this machine's rules right away (and sends them if
+    /// hosting). Online guests can't: the host's rules apply.
+    /// </summary>
+    internal static bool ToggleDisabledLocal(string name)
+    {
+        if (RulesSync.IsOnlineClient || string.IsNullOrEmpty(name))
+            return false;
+        Disabled.SetLocal(ToggleName(Disabled.LocalText, name));
+        RulesSync.BroadcastIfHost();
+        Plugin.Log.LogInfo($"Disabled abilities: {Disabled.LocalText}");
+        return true;
+    }
 
     /// <summary>
     /// Every round, before the slimes and their abilities are created (on every machine, same result): preselected

@@ -11,6 +11,7 @@ namespace CaliSkills;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 [BepInProcess("BoplBattle.exe")]
+[BepInDependency(CustomRulesStats.CustomRulesGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public class Plugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
@@ -24,6 +25,7 @@ public class Plugin : BaseUnityPlugin
         SkillRegistry.Add(new OmaeSkill());
         SkillRegistry.Add(new RunSkill());
         SkillRegistry.Add(new NothingPersonalSkill());
+        CustomRulesStats.RegisterIfInstalled();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
         new Harmony(MyPluginInfo.PLUGIN_GUID).PatchAll(typeof(Plugin).Assembly);

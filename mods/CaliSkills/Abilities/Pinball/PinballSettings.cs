@@ -3,10 +3,9 @@ using System.ComponentModel;
 namespace CaliSkills.Abilities.Pinball;
 
 /// <summary>
-/// Tuning values for the Pinball skill. These are the defaults: change them here and rebuild, or live in game
-/// by right-clicking Pinball in the ability grid (see Core/SkillSettingsEditor.cs; lasts until the game restarts).
-/// Every public static float/int/bool field shows up in that editor, with its [Description] as hint.
-/// All players in a match must use the same values (the game simulation is deterministic lockstep).
+/// Tuning values for the Pinball skill. These are the defaults: change them here and rebuild, or, with CustomRules,
+/// as the lobby host in the rules menu (Abilities → right-click the skill; see Core/CustomRulesStats.cs). Every public
+/// static float/int/bool field is a stat there, with its [Description] as hint. Every player uses the host's values.
 ///
 /// The slime throws the ball like a grenade. Speed, size and knockback scale with how long the ability was held
 /// (the ball grows in the slime's hand meanwhile): the values below are for a FULL charge, and the "...AtMinCharge"

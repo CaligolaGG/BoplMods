@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.1
+- Skill stats are now set by the lobby host in CustomRules (Custom rules → Abilities → right-click a skill), saved and used by every player. CustomRules is optional: without it the skills use their built-in values.
+- Removed the old right-click settings editor in the ability grid (local only).
+
 ## 1.5.0
 - New skill: Omae wa mo shindeiru. Aim a poke (red cone, blocked by platforms), players hit are marked (flashing faster and stronger as time runs out) and die after 20 s; poking a marked player takes 5 s off. Own icon, and plays "Omae wa mou shindeiru" when a poke marks someone.
 - New skill: Nothing Personal Kid. Teleport behind the furthest player, Teleport-style (portal, light beam, smoke cloud, 0.1 s travel), then 0.3 s immune and unable to use other abilities. 10 s cooldown.

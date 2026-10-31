@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
-    <Version>1.5.0</Version>
+    <Version>1.5.1</Version>
     <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
@@ -43,6 +43,12 @@
       <HintPath>$(BoplManagedDir)\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+  </ItemGroup>
+
+  <!-- CustomRules (optional at runtime, soft dependency): skill settings become host-set ability stats.
+       Installed separately, so not copied with this mod. -->
+  <ItemGroup>
+    <ProjectReference Include="..\CustomRules\CustomRules.csproj" Private="false" />
   </ItemGroup>
 
   <!-- Skill art and sounds, shipped inside the DLL (read with Core/EmbeddedAssets.cs by file name). -->

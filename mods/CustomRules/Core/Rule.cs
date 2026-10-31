@@ -77,6 +77,12 @@ public sealed class Rule
     /// <summary>A bool rule that is turned off when this one is turned on in the menu (and the other way round).</summary>
     internal Rule ExclusiveWith { get; set; }
 
+    /// <summary>
+    /// Not drawn as a row of the Rules tab (edited elsewhere, e.g. the abilities window), but saved, synced and kept in
+    /// profiles like any rule.
+    /// </summary>
+    internal bool Hidden { get; set; }
+
     public string ActiveText { get; private set; }
 
     public float ActiveFloat { get; private set; }

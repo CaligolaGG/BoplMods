@@ -37,9 +37,9 @@ Teleport **behind the player furthest from you**, Teleport-style: you vanish in 
 
 With extra skills the character select grid gets taller than the screen; this mod makes it scroll (mouse wheel, or it follows the keyboard/gamepad selection).
 
-## Tweaking skills in game (dev tool)
+## Changing skill stats
 
-In character select, open the ability grid with keyboard and mouse and **right-click** a CaliSkills skill (e.g. Pinball) to open its settings. Change values and press **Apply**: they're used from the next round until you restart the game. **Reset to defaults** restores the built-in values. Esc closes the window.
+With [CustomRules](https://thunderstore.io/c/bopl-battle/p/caligola/CustomRules/) installed, the lobby host can change every skill's stats (speed, cooldown, mark duration...): **Custom rules → Abilities → right-click the skill**. The changes are saved and every player in the lobby uses the host's values. Without CustomRules the skills use their built-in values.
 
 ## Multiplayer
 

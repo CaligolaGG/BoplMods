@@ -65,9 +65,12 @@ internal sealed partial class RulesMenu
     }
 
     /// <summary>The option's sprite inside <paramref name="rect"/>, or a "?" for none / unknown.</summary>
-    private static void DrawOptionIcon(Rect rect, Rule rule, string value)
+    private static void DrawOptionIcon(Rect rect, Rule rule, string value) =>
+        DrawSprite(rect, string.IsNullOrEmpty(value) ? null : rule.OptionIcon?.Invoke(value));
+
+    /// <summary>A sprite inside <paramref name="rect"/> (a small margin in), or a "?" if null.</summary>
+    private static void DrawSprite(Rect rect, Sprite sprite)
     {
-        Sprite sprite = string.IsNullOrEmpty(value) ? null : rule.OptionIcon?.Invoke(value);
         Rect inner = new Rect(rect.x + 4f, rect.y + 4f, rect.width - 8f, rect.height - 8f);
         if (sprite == null || sprite.texture == null)
         {
