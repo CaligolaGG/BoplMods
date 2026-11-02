@@ -35,6 +35,19 @@ public class BatAbility : AbilityMonoBehaviour
     /// <summary>Seconds a deflected item (grenade, pinball...) spares its new owner, the batter.</summary>
     private static readonly Fix OwnerGraceTime = (Fix)0.3f;
 
+    /// <summary>
+    /// The swing is checked in sub-steps so the bat's tip moves at most this far (units) between two checks: a fast
+    /// swing would otherwise jump over players, or reach the floor (pogo) in the same tick it reaches a player on it.
+    /// </summary>
+    private static readonly Fix MaxTipStep = (Fix)0.35f;
+    private const int MaxSubSteps = 32;
+
+    /// <summary>
+    /// Squished when, pushed out of the bat, a player would sink this share of its radius into a platform: there's no
+    /// room to get out of the way. (A slime standing on a floor touches it already; less than this is just a shove.)
+    /// </summary>
+    private static readonly Fix SquishDepth01 = (Fix)0.3f;
+
     private SlimeController _caster;
     private Player _player;
     private int _slot = -1;
@@ -48,7 +61,9 @@ public class BatAbility : AbilityMonoBehaviour
     private Fix _speed;
     private Vec2 _dir;
     private readonly HashSet<int> _knocked = new();
+    private readonly HashSet<int> _squished = new();
     private readonly HashSet<int> _deflected = new();
+    private PhysicsParent[] _platformHits = new PhysicsParent[4];
 
     private SpriteRenderer _visual;
 
@@ -106,13 +121,26 @@ public class BatAbility : AbilityMonoBehaviour
         }
 
         Fix dt = GameTime.FixedDeltaTime(_player.Id, simDeltaTime);
-        _swept = Fix.Min(_swept + _speed * dt, _arc);
-        _dir = Rotate(_start, _sign * _swept);
-        if (!Pogo())
+        Fix from = _swept;
+        Fix step = Fix.Min(_swept + _speed * dt, _arc) - from;
+        Fix tipTravel = step * (Fix)BatSettings.BatLength * Scale;
+        int steps = 1;
+        while (steps < MaxSubSteps && tipTravel > MaxTipStep * (Fix)(long)steps)
+            steps++;
+
+        List<PlayerCollision> targets = Targets();
+        List<BoplBody> projectiles = BatSettings.DeflectProjectiles ? Projectiles() : null;
+        for (int i = 1; i <= steps; i++)
         {
-            if (BatSettings.DeflectProjectiles)
-                DeflectProjectiles();
-            HitPlayers();
+            _swept = from + step * (Fix)(long)i / (Fix)(long)steps;
+            _dir = Rotate(_start, _sign * _swept);
+            // Players and projectiles first: one caught between the bat and the floor is squished in the same step
+            // the bat reaches the floor.
+            if (projectiles != null)
+                DeflectProjectiles(projectiles);
+            HitPlayers(targets);
+            if (Pogo())
+                return;
         }
         if (_swept >= _arc)
             _state = State.Idle;
@@ -141,6 +169,7 @@ public class BatAbility : AbilityMonoBehaviour
         _swept = Fix.Zero;
         _dir = _start;
         _knocked.Clear();
+        _squished.Clear();
         _deflected.Clear();
         _state = State.Swinging;
         AudioManager.Get()?.Play("dash");
@@ -179,15 +208,17 @@ public class BatAbility : AbilityMonoBehaviour
         return true;
     }
 
-    private void HitPlayers()
+    private void HitPlayers(List<PlayerCollision> targets)
     {
         Segment(_dir, out Vec2 from, out Vec2 to);
         Vec2 center = _caster.body.position;
         Fix thickness = (Fix)BatSettings.BatThickness * Scale;
         Fix angularSpeed = _sign * _speed;
 
-        foreach (PlayerCollision target in Targets())
+        foreach (PlayerCollision target in targets)
         {
+            if (target == null || target.IsDestroyed || !target.gameObject.activeInHierarchy || _squished.Contains(target.GetPlayerId()))
+                continue;
             Vec2 c = target.body.position;
             Fix radius = target.physics != null ? target.physics.radius : Scale;
             Vec2 closest = ClosestOnSegment(from, to, c);
@@ -204,12 +235,12 @@ public class BatAbility : AbilityMonoBehaviour
             if (approach <= Fix.Zero || normal == Vec2.zero)
                 continue;
 
-            // A platform right behind them: caught between the bat and it.
-            RaycastInformation wall = DetPhysics.Get().RaycastToClosestRoundedRect(c, normal, radius + overlap + (Fix)0.05f);
-            bool caught = wall && wall.nearDist < radius + overlap;
+            // Caught between the bat and a platform: out of the bat, they'd be pushed into it.
+            bool caught = DetPhysics.Get().circleCastRoundedRect(c + normal * overlap, radius * (Fix.One - SquishDepth01), ref _platformHits) > 0;
             if (caught && !BatSettings.NoSquashing)
             {
-                target.killPlayer(_player.Id, spawnEffect: true, ignoreInvulnerability: false, CauseOfDeath.Squished);
+                if (target.killPlayer(_player.Id, spawnEffect: true, ignoreInvulnerability: false, CauseOfDeath.Squished))
+                    _squished.Add(target.GetPlayerId());
                 continue;
             }
 
@@ -235,15 +266,17 @@ public class BatAbility : AbilityMonoBehaviour
     /// <see cref="BatSettings.DeflectPower"/> × the bat's speed there, their speed along it is kept. Once per swing each
     /// one plays a hit sound and changes owner to this slime (so it can hit the one who threw it, not us).
     /// </summary>
-    private void DeflectProjectiles()
+    private void DeflectProjectiles(List<BoplBody> projectiles)
     {
         Segment(_dir, out Vec2 from, out Vec2 to);
         Vec2 center = _caster.body.position;
         Fix thickness = (Fix)BatSettings.BatThickness * Scale;
         Fix angularSpeed = _sign * _speed;
 
-        foreach (BoplBody projectile in Projectiles())
+        foreach (BoplBody projectile in projectiles)
         {
+            if (projectile == null || projectile.IsDestroyed)
+                continue;
             Vec2 p = projectile.position;
             Fix radius = projectile.physicsCollider is DPhysicsCircle circle ? circle.radius : projectile.Scale / (Fix)2L;
             Vec2 closest = ClosestOnSegment(from, to, p);
@@ -302,7 +335,7 @@ public class BatAbility : AbilityMonoBehaviour
             .ToList();
 
     /// <summary>Other players' active bodies, in an order that's the same on every machine.</summary>
-    private IEnumerable<PlayerCollision> Targets() =>
+    private List<PlayerCollision> Targets() =>
         FindObjectsOfType<PlayerCollision>()
             .Where(b => b.gameObject.activeInHierarchy && b.body != null && !b.IsInvulnerable && b.GetPlayerId() != _player.Id &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&

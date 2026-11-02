@@ -68,6 +68,22 @@ internal static class AbilityRules
         return index >= 0 ? list.sprites[index].sprite : null;
     }
 
+    /// <summary>
+    /// Abilities a slot can be rerolled into, in list order (same everywhere): real abilities Random could give that the
+    /// rules allow (active values).
+    /// </summary>
+    internal static List<int> RerollCandidates(NamedSpriteList list)
+    {
+        var candidates = new List<int>();
+        for (int i = FirstRealAbility; i < list.sprites.Count; i++)
+        {
+            NamedSprite entry = list.sprites[i];
+            if (entry.associatedGameObject != null && !IsRandom(entry) && !NeverRandom.Contains(entry.name) && Allowed(entry))
+                candidates.Add(i);
+        }
+        return candidates;
+    }
+
     private static bool IsRandom(NamedSprite entry) =>
         entry.associatedGameObject != null && entry.associatedGameObject.GetComponent<RandomAbility>() != null;
 

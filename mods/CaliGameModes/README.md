@@ -15,8 +15,11 @@ Two teams, two goals, one ball. Players who spawn on the left play against those
 - **Nobody dies**: anyone who would die comes back in the middle of the map.
 - Only the mode's balls count: Pinball abilities don't score.
 - **First to**: goals a team needs to win (0 = no goal limit). **Time (s)**: match length; then the team with more goals wins, a tie is a draw (0 = no time limit). **Number of balls**: balls in play at once. **Edit football**: the ball's own stats (size, knockback, bounce off players and off the rest...), separate from the Pinball ability's.
-- Turning it on also sets the usual rules for it: Extra jump on with 1 air jump, Infinite round duration, Player bouncing mode, No offensive abilities (you can change them afterwards).
+- Turning it on also sets the usual rules for it: Deactivate custom maps off, Extra jump on with 1 air jump, Infinite round duration, Player bouncing mode, No offensive abilities (you can change them afterwards).
 - **Needs the [Map Loader](https://thunderstore.io/c/bopl-battle/p/MapMakerTeam/Map_Loader/) mod**: football is played on its own maps, which come with this mod (copied into Map Loader's `Maps` folder): Football Field. While football is on only football maps are played; while it's off Map Loader gets the other maps (none: the game's own levels, in local games; online Map Loader can't play without custom maps, so it keeps the football maps).
+
+### Deactivate custom maps (default on)
+With the [Map Loader](https://thunderstore.io/c/bopl-battle/p/MapMakerTeam/Map_Loader/) mod installed, every match is normally played on its custom maps. With this rule on they're left out of the rotation and matches use the game's own levels. Football mode turns it off and always plays on its own football maps only. Without Map Loader it does nothing.
 
 ## Notes
 

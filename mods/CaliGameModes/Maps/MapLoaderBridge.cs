@@ -16,6 +16,7 @@ namespace CaliGameModes.Maps;
 /// Talks to the Map Loader mod (MapMakerTeam, "com.MLT.MapLoader"), a soft dependency, through reflection only.
 ///
 /// Map Loader plays custom maps (zips in BepInEx/plugins/Maps) instead of the game's levels as soon as it has any.
+/// The "Deactivate custom maps" rule (<see cref="UseGameLevels"/>) makes it play the game's own levels instead.
 /// Game modes that need their own maps (football) ship them in this mod: they're copied into that folder at start-up,
 /// and the host / local player's map list is filtered to the mode's maps while the mode is on, and to the other maps
 /// while it's off (none left = the game's own levels, offline). Online guests get the host's map from Map Loader itself.
@@ -37,6 +38,16 @@ internal static class MapLoaderBridge
     private static int[] _allUuids;
 
     private static bool? _footballShown;
+
+    // Game levels instead of custom maps: Map Loader's list is hidden while it decides the level (see Init).
+    private static int _hideDepth;
+    private static string[] _hiddenJsons;
+
+    /// <summary>
+    /// Whether matches use the game's own levels instead of Map Loader's maps (asked on every machine, so it must give
+    /// the same answer everywhere: lobby rule values).
+    /// </summary>
+    internal static Func<bool> UseGameLevels = () => false;
 
     internal static bool Available => _allJsons != null;
 
@@ -71,6 +82,45 @@ internal static class MapLoaderBridge
 
         CopyShippedMaps();
         harmony.Patch(start, postfix: new HarmonyMethod(typeof(MapLoaderBridge), nameof(AfterMapsLoaded)));
+
+        // Map Loader plays a custom map wherever it finds MapJsons non-empty: picking the next level (host / local),
+        // the start packet (guests) and the level scene load (everyone). Empty during those calls = the game's own
+        // level, while the rest of its list (zips sent to guests, the pick bag) stays intact so nothing breaks.
+        var hide = new HarmonyMethod(typeof(MapLoaderBridge), nameof(HideMapsPrefix)) { priority = Priority.First };
+        var restore = new HarmonyMethod(typeof(MapLoaderBridge), nameof(RestoreMapsFinalizer));
+        foreach (MethodInfo decision in new[]
+                 {
+                     AccessTools.Method(typeof(GameSession), nameof(GameSession.RandomBagLevel)),
+                     AccessTools.Method(typeof(SteamManager), nameof(SteamManager.HostGame)),
+                     AccessTools.Method(typeof(SteamManager), nameof(SteamManager.HostNextLevel)),
+                     AccessTools.Method(typeof(CharacterSelectHandler), nameof(CharacterSelectHandler.TryStartGame_inner)),
+                     networking != null ? AccessTools.Method(networking, "OnStartPacket") : null,
+                     AccessTools.Method(_plugin, "OnSceneLoaded"),
+                 })
+        {
+            if (decision == null)
+                Plugin.Log.LogWarning("Map Loader: a method to patch is missing, custom maps may not be turned off everywhere.");
+            else
+                harmony.Patch(decision, prefix: hide, finalizer: restore);
+        }
+    }
+
+    private static void HideMapsPrefix()
+    {
+        if (_hideDepth++ > 0 || _mapJsons == null || !UseGameLevels())
+            return;
+        _hiddenJsons = (string[])_mapJsons.GetValue(null);
+        _mapJsons.SetValue(null, new string[0]);
+    }
+
+    private static Exception RestoreMapsFinalizer(Exception __exception)
+    {
+        if (--_hideDepth == 0 && _hiddenJsons != null)
+        {
+            _mapJsons.SetValue(null, _hiddenJsons);
+            _hiddenJsons = null;
+        }
+        return __exception;
     }
 
     /// <summary>Our maps (embedded "CaliGameModes.Maps.*.zip") into Map Loader's folder, unless already there unchanged.</summary>
@@ -159,7 +209,8 @@ internal static class MapLoaderBridge
         _footballShown = football;
 
         List<int> picked = Enumerable.Range(0, _allUuids.Length).Where(i => FootballMaps.IsFootballMap(_allUuids[i]) == football).ToList();
-        // Online, Map Loader can't host without maps: rather play the football maps without the mode.
+        // Online, Map Loader can't host with an empty list: keep every map (with "Deactivate custom maps" on, the game's
+        // own levels are played anyway; off, the football maps are played without the mode).
         if (picked.Count == 0 && !football && GameLobby.isOnlineGame)
             picked = Enumerable.Range(0, _allUuids.Length).ToList();
 

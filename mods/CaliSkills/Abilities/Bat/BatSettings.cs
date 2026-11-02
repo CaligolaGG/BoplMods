@@ -22,7 +22,7 @@ internal static class BatSettings
     public static float BatLength = 7f;
 
     [Description("Bat thickness (radius, units). Scales with the slime's size.")]
-    public static float BatThickness = 0.5f;
+    public static float BatThickness = 0.7f;
 
     [Description("Share of the bat's speed (where it hits) given to a hit player as a knock.")]
     public static float HitKnock = 0.35f;

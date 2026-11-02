@@ -38,6 +38,10 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | ↳ Bounce power × | 0–5 | 1 |
 | No offensive abilities | on/off: offensive abilities are greyed out and can't be picked (a ready player holding one is sent back to pick again, and the match can't start); Random (and pickups) only give non-offensive ones | off |
 | Only offensive abilities | on/off: the opposite (can't be on together with No offensive) | off |
+| Abilities max use | on/off: each ability slot can only be used a limited number of times per round (holding the button counts as one use); the Black hole's usual once-per-round limit is lifted | off |
+| ↳ Max use amount | 0–100 uses per slot each round; 0 = abilities can't be used at all | 3 |
+| ↳ Destroy ability on max use | on/off: an ability a player used up is gone for them for the rest of the game: it never comes back in their rerolls, and their other slots holding it (also from later pickups) are rerolled right away (never lost) | off |
+| ↳ Reroll on max use | on/off: a used-up slot gets a new random ability (allowed by the rules) right after its last use, starting on cooldown; off = the slot is lost (an ability pickup fills it again) | on |
 | **Preselect abilities** → Ability 1 / 2 / 3 | pick an ability (or Random) to force it on every player in that slot: ◀ ▶ step through them, click the icon to choose from a grid | Player's choice |
 | Extra Jump | on/off: jump again in mid-air (replaces the ExtraJump mod: uninstall it) | off |
 | ↳ Air jumps | 1–10 | 2 |

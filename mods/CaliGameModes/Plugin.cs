@@ -26,6 +26,7 @@ public class Plugin : BaseUnityPlugin
         Log = Logger;
 
         Section = RuleRegistry.AddSection("CaliGameModes", new Color(0.55f, 0.8f, 1f));
+        CustomMapsRule.Register();
         PinballMode.Register();
         FootballMode.Register();
 

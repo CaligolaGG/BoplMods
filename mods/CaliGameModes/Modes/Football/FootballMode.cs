@@ -39,6 +39,7 @@ internal static class FootballMode
             "The football's stats: size, knockback, bounce... (separate from the Pinball ability's).");
 
         RuleRegistry.MakeExclusive(Enabled, PinballMode.Enabled);
+        RuleRegistry.AddPreset(Enabled, "DeactivateCustomMaps", false);
         RuleRegistry.AddPreset(Enabled, "ExtraJump", true);
         RuleRegistry.AddPreset(Enabled, "ExtraJump.AirJumps", 1);
         RuleRegistry.AddPreset(Enabled, "InfiniteRound", true);
