@@ -3,8 +3,8 @@
   <PropertyGroup>
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
-    <Version>1.5.1</Version>
-    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat.</Description>
+    <Version>1.5.2</Version>
+    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat, Rock Paper Scissors.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>
@@ -41,6 +41,11 @@
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
       <HintPath>$(BoplManagedDir)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Rock Paper Scissors' VS screen and labels (IMGUI, bold text). -->
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

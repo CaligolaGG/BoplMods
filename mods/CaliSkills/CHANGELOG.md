@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.2
+- New skill: Rock Paper Scissors. Hold to show a yellow circle around you, release to challenge the closest enemy slime in it. Time stops for everyone, the two of you included (Time stop's effect), a VS screen shows the duel, then both players pick rock, paper or scissors with their three ability buttons within 2 s (no pick = random). The picks are revealed and the loser is squashed; on a draw the challenged player's abilities all go on cooldown. 3 s cooldown. Stats: circle radius, VS / choice / reveal durations.
+
 ## 1.5.1
 - New skill: Wooden Bat. Hold to raise the bat (aim with movement), release to swing it. The bat is solid: it shoves players along and knocks them slightly, squishes anyone caught between it and a platform, never hits you, and hitting a platform with it bounces you away (pogo). 3 s cooldown. Hits flying projectiles back (arrows, grenades, smoke grenades, pinballs, missiles, mines...), which then count as yours (`DeflectProjectiles`, `DeflectPower` stats). `NoSquashing` stat (off by default): no squishing, caught players are only knocked, and the bat stops counting as offensive (CustomRules' offensive filters, Random).
 - Skill stats are now set by the lobby host in CustomRules (Custom rules → Abilities → right-click a skill), saved and used by every player. CustomRules is optional: without it the skills use their built-in values.

@@ -37,6 +37,16 @@ Hold the button to raise the bat (aim it with your movement keys, like the Bow),
 
 Teleport **behind the player furthest from you**, Teleport-style: you vanish in a puff of smoke, a light beam runs to a portal behind them, and you appear there a tenth of a second later. For a moment after appearing you're **immune** (like after a respawn) but can't use other abilities. Cooldown: **10 seconds**.
 
+### Rock Paper Scissors
+
+Hold the button: a **yellow circle** shows around you (you can still move). Release it to **challenge** the closest enemy slime in the circle (nobody in it: nothing happens).
+
+- **Time stops** for everyone, like the Time stop ability, and that includes the two of you: nobody can move, die or be knocked until the duel is over.
+- A **VS screen** shows the two duelists for a second.
+- Then your three ability icons turn into **rock, paper and scissors**: press the matching ability button within **2 seconds**, while the game chants *rock... paper... scissors...* (you can change your mind until then; no pick = a random one). Your pick is highlighted on your icons. When both duelists play on the same screen, they only see that the other is ready, not what they picked.
+- The picks are revealed, time starts again and **the loser gets squashed**. On a **draw**, the challenged player's abilities all go on cooldown.
+- Cooldown: **3 seconds**, from the release.
+
 ## Ability grid
 
 With extra skills the character select grid gets taller than the screen; this mod makes it scroll (mouse wheel, or it follows the keyboard/gamepad selection).
