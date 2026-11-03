@@ -59,3 +59,4 @@ Added by `mods/CaliSkills` to the end of the `abilityIcons` list (their IDs come
 | Nothing Personal Kid | | 10 | Teleports behind the furthest player, then briefly immune. |
 | Wooden Bat | ✔ (not with `NoSquashing`) | 3 | Hold and release to swing: shoves and knocks players, squashes them against platforms, deflects projectiles, pogo off platforms. |
 | Rock Paper Scissors | ✔ | 3 | Hold (yellow circle), release to stop time and duel the closest enemy slime in it at rock paper scissors; the loser is squashed, a draw puts the challenged player's abilities on cooldown. |
+| Fan | | 6 | Become a fan for 3 s that turns towards your aim and blows a trapezoid of wind, pushing players, projectiles, platforms and smoke away (strongest near the fan). |

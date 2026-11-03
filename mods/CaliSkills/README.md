@@ -47,6 +47,15 @@ Hold the button: a **yellow circle** shows around you (you can still move). Rele
 - The picks are revealed, time starts again and **the loser gets squashed**. On a **draw**, the challenged player's abilities all go on cooldown.
 - Cooldown: **3 seconds**, from the release.
 
+### Fan
+
+Turn into an **electric fan** for **3 seconds** (a quick transformation, and back again at the end). Like the Beam, you can't move or jump meanwhile and **gravity doesn't pull you** (in the air you hover where you are; only pushes move you), and the fan **turns towards where you aim**. The fan is big and has your slime's colors.
+
+- It blows a **cone of wind** (a trapezoid, narrow at the fan, wide at the far end) in the direction it faces.
+- **Everything** caught in it is pushed away every moment: other players, projectiles and items (arrows, grenades, mines, pinballs...), platforms that can move, and smoke clouds.
+- The wind is **strongest right at the fan** and fades towards the far end.
+- Cooldown: **6 seconds**, from when you're a slime again.
+
 ## Ability grid
 
 With extra skills the character select grid gets taller than the screen; this mod makes it scroll (mouse wheel, or it follows the keyboard/gamepad selection).

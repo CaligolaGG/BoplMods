@@ -4,7 +4,7 @@
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
     <Version>1.5.2</Version>
-    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat, Rock Paper Scissors.</Description>
+    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat, Rock Paper Scissors, Fan.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>
@@ -41,6 +41,11 @@
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
       <HintPath>$(BoplManagedDir)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Fan: pushing platforms (the game's AddForceAtPosition takes a ForceMode2D). -->
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(BoplManagedDir)\UnityEngine.Physics2DModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <!-- Rock Paper Scissors' VS screen and labels (IMGUI, bold text). -->
