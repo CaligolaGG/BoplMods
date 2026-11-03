@@ -49,7 +49,7 @@ Hold the button: a **yellow circle** shows around you (you can still move). Rele
 
 ### Fan
 
-Turn into an **electric fan** for **3 seconds** (a quick transformation, and back again at the end). Like the Beam, you can't move or jump meanwhile and **gravity doesn't pull you** (in the air you hover where you are; only pushes move you), and the fan **turns towards where you aim**. The fan is big and has your slime's colors.
+**Hold** the button to turn into an **electric fan** (a quick transformation); **release** it and you turn back into a slime, like the Beam. It blows for at most **4 seconds**. Like the Beam, you can't move or jump meanwhile and **gravity doesn't pull you** (in the air you hover where you are; only pushes move you), and the fan **turns towards where you aim**. The fan is big and has your slime's colors.
 
 - It blows a **cone of wind** (a trapezoid, narrow at the fan, wide at the far end) in the direction it faces.
 - **Everything** caught in it is pushed away every moment: other players, projectiles and items (arrows, grenades, mines, pinballs...), platforms that can move, and smoke clouds.

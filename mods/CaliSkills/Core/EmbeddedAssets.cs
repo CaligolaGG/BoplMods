@@ -72,6 +72,21 @@ internal static class EmbeddedAssets
         return sprite;
     }
 
+    /// <summary>A PNG as a sprite <paramref name="worldWidth"/> units wide, pivot given as a 0..1 fraction (y up).</summary>
+    internal static Sprite LoadSprite(string fileName, float worldWidth, Vector2 pivot)
+    {
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, mipChain: false);
+        tex.LoadImage(Read(fileName));
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        // Runtime assets: scene loads (Resources.UnloadUnusedAssets) must not destroy them.
+        tex.hideFlags = HideFlags.DontUnloadUnusedAsset;
+        Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot, tex.width / worldWidth);
+        sprite.name = Path.GetFileNameWithoutExtension(fileName);
+        sprite.hideFlags = HideFlags.DontUnloadUnusedAsset;
+        return sprite;
+    }
+
     /// <summary>A 16-bit PCM WAV (mono or stereo) as an AudioClip.</summary>
     internal static AudioClip LoadWav(string fileName)
     {

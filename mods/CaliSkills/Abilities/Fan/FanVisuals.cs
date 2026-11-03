@@ -1,3 +1,4 @@
+using System.Linq;
 using CaliSkills.Abilities.NothingPersonal;
 using UnityEngine;
 
@@ -6,10 +7,11 @@ namespace CaliSkills.Abilities.Fan;
 /// <summary>
 /// What the Fan looks like (visual only, drawn from <see cref="FanAbility"/>'s sim state; floats and Unity time are fine):
 /// - the transformation: a puff of smoke, the slime squashes down and the fan pops up out of it (and back at the end);
-/// - the fan: a stand (foot towards the floor it stands on, in the slime's shadow color), the motor housing in the
-///   slime's color, the cage and two
-///   spinning blades, turned towards where it blows;
-/// - the wind: the trapezoid area, faint, and streaks rushing out of the fan, faster and brighter near it.
+/// - the fan: <see cref="FanSkill.BodySprite"/> with its yellow parts (<see cref="FanSkill.TintSprite"/>) in the
+///   slime's color, turned towards where it blows (mirrored when blowing right, so it's never upside down), humming
+///   while it blows;
+/// - the wind: the trapezoid area, faint, and streaks rushing out of the fan, faster and brighter near it, and the
+///   wind sound looping while it blows.
 /// The real slime sprite is hidden meanwhile.
 /// </summary>
 internal sealed class FanVisuals : MonoBehaviour
@@ -18,12 +20,12 @@ internal sealed class FanVisuals : MonoBehaviour
 
     private FanAbility _ability;
     private GameObject _root;
-    private SpriteRenderer _slimeCopy, _stand, _housing, _cage, _area;
-    private readonly SpriteRenderer[] _blades = new SpriteRenderer[2];
+    private SpriteRenderer _slimeCopy, _body, _tint, _area;
+    private AudioSource _sound;
     private readonly SpriteRenderer[] _streaks = new SpriteRenderer[StreakCount];
     private readonly float[] _streakAlong = new float[StreakCount];
     private readonly float[] _streakSide = new float[StreakCount];
-    private float _spin;
+    private float _hum;
     private bool _hidingSlime;
 
     private void Awake() => _ability = GetComponent<FanAbility>();
@@ -33,11 +35,12 @@ internal sealed class FanVisuals : MonoBehaviour
         _root = new GameObject("CaliSkills.Fan");
         _slimeCopy = Renderer("SlimeCopy", null);
         _area = Renderer("WindArea", null);
-        _stand = Renderer("Stand", FanSkill.StandSprite);
-        _housing = Renderer("Housing", FanSkill.HousingSprite);
-        _blades[0] = Renderer("Blade0", FanSkill.BladeSprite);
-        _blades[1] = Renderer("Blade1", FanSkill.BladeSprite);
-        _cage = Renderer("Cage", FanSkill.CageSprite);
+        _body = Renderer("Body", FanSkill.BodySprite);
+        _tint = Renderer("Tint", FanSkill.TintSprite);
+        _sound = _root.AddComponent<AudioSource>();
+        _sound.clip = FanSkill.WindSound;
+        _sound.loop = true;
+        _sound.playOnAwake = false;
         for (int i = 0; i < StreakCount; i++)
         {
             _streaks[i] = Renderer("Streak" + i, FanSkill.StreakSprite);
@@ -122,30 +125,23 @@ internal sealed class FanVisuals : MonoBehaviour
         float pop = Mathf.Clamp01((transform01 - 0.4f) / 0.6f);
         float fanScale = size * (Mathf.SmoothStep(0f, 1f, pop) + 0.15f * Mathf.Sin(pop * Mathf.PI));
         bool showFan = pop > 0f;
-        _stand.enabled = _housing.enabled = _cage.enabled = _blades[0].enabled = _blades[1].enabled = showFan;
+        _body.enabled = _tint.enabled = showFan;
         if (showFan)
         {
-            // The fan grows up out of the slime to its head position (its foot on the floor), and the stand points
-            // its foot at the floor it stands on (straight down in the air).
+            // The fan grows up out of the slime to its cage position (its foot on the floor).
             center = Vector2.Lerp(center, (Vector2)_ability.HeadPosition, Mathf.SmoothStep(0f, 1f, pop));
-            Vector2 up = (Vector2)_ability.Up;
-            float standAngle = Mathf.Atan2(up.y, up.x) * Mathf.Rad2Deg - 90f;
-            Place(_stand, center, standAngle, fanScale, layer, order);
-            _stand.color = SlimeColor(slime, "_ShadowColor");
-
-            // The head looks along the wind; flipped vertically when blowing left so it isn't upside down.
-            bool left = dir.x < 0f;
-            Place(_housing, center, angle, fanScale, layer, order + 1, flipY: left);
-            _housing.color = SlimeColor(slime, "_MainColor");
-            _spin += Time.deltaTime * (_ability.CurrentState == FanAbility.State.Blowing ? 40f : 12f);
-            for (int i = 0; i < 2; i++)
+            // The sprite blows left; mirrored to blow right, so the stand stays below.
+            bool right = dir.x > 0f;
+            float fanAngle = right ? angle : angle - 180f;
+            if (_ability.CurrentState == FanAbility.State.Blowing)
             {
-                float stretch = Mathf.Cos(_spin + i * Mathf.PI / 2f);
-                Vector2 hub = center + dir * (0.14f * fanScale);
-                Place(_blades[i], hub, angle, fanScale, layer, order + 2);
-                _blades[i].transform.localScale = new Vector3(fanScale * 0.6f, fanScale * 0.86f * stretch, 1f);
+                _hum += Time.deltaTime;
+                fanAngle += 1.5f * Mathf.Sin(_hum * 45f);
             }
-            Place(_cage, center, angle, fanScale, layer, order + 3);
+            Place(_body, center, fanAngle, fanScale, layer, order);
+            Place(_tint, center, fanAngle, fanScale, layer, order + 1);
+            _body.flipX = _tint.flipX = right;
+            _tint.color = SlimeColor(slime);
         }
 
         DrawWind(dir, angle, layer, order, scale);
@@ -174,10 +170,11 @@ internal sealed class FanVisuals : MonoBehaviour
         renderer.sortingOrder = order;
     }
 
-    /// <summary>The wind's area and streaks, while it blows.</summary>
+    /// <summary>The wind's area, streaks and sound, while it blows.</summary>
     private void DrawWind(Vector2 dir, float angle, int layer, int order, float scale)
     {
         bool blowing = _ability.CurrentState == FanAbility.State.Blowing;
+        UpdateSound(blowing);
         _area.enabled = blowing;
         foreach (SpriteRenderer streak in _streaks)
             streak.enabled = blowing;
@@ -222,15 +219,22 @@ internal sealed class FanVisuals : MonoBehaviour
     }
 
     /// <summary>
-    /// The slime's own color from its player material (the game's slime shader: _MainColor body, _ShadowColor darker
-    /// shade), else its team color.
+    /// The slime's color: the player material's _ShadowColor, which is what the game itself uses as "the player's
+    /// color" (Beam, Platform tint, Mine, cursor); else its team color.
     /// </summary>
-    private static Color SlimeColor(SlimeController slime, string property)
+    private static readonly System.Collections.Generic.HashSet<string> LoggedColors = new();
+
+    private static Color SlimeColor(SlimeController slime)
     {
+        const string property = "_ShadowColor";
         Player player = PlayerHandler.Get().GetPlayer(slime.GetPlayerId());
         Material material = player?.Color;
         if (material != null && material.HasProperty(property))
         {
+            if (LoggedColors.Add(material.name))
+                Plugin.Log.LogInfo($"Fan: player material '{material.name}' colors: " + string.Join(", ",
+                    new[] { "_MainColor", "_ShadowColor", "_ReflectionColour" }.Where(material.HasProperty)
+                        .Select(n => $"{n} {material.GetColor(n)}")));
             Color c = material.GetColor(property);
             c.a = 1f;
             return c;
@@ -245,8 +249,22 @@ internal sealed class FanVisuals : MonoBehaviour
         return Color.white;
     }
 
+    /// <summary>The wind sound, at the game's sound effects volume, looping while the fan blows.</summary>
+    private void UpdateSound(bool blowing)
+    {
+        if (_sound == null || _sound.clip == null)
+            return;
+        AudioManager audio = AudioManager.Get();
+        _sound.volume = audio != null ? audio.currentMasterVolume * audio.sfxVolume : 1f;
+        if (blowing && !_sound.isPlaying)
+            _sound.Play();
+        else if (!blowing && _sound.isPlaying)
+            _sound.Stop();
+    }
+
     private void Hide()
     {
+        UpdateSound(blowing: false);
         if (_hidingSlime)
         {
             _hidingSlime = false;

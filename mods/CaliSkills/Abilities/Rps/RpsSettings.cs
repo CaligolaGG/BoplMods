@@ -13,7 +13,7 @@ internal static class RpsSettings
     public static float AbilityCooldown = 3f;
 
     [Description("Radius of the yellow circle (units, scales with your size): on release you challenge the closest enemy slime in it.")]
-    public static float CircleRadius = 8f;
+    public static float CircleRadius = 10f;
 
     [Description("Seconds the VS screen is shown before the choice.")]
     public static float VsDuration = 2f;

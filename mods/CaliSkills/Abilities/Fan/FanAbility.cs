@@ -12,11 +12,12 @@ namespace CaliSkills.Abilities.Fan;
 ///   move, jump or use abilities (input suppressed), it isn't affected by gravity (in the air it stops and hovers, only
 ///   pushes move it; on a platform it stays on it), and it turns towards where it aims
 ///   (<see cref="FanSettings.RotationSpeed"/>), starting from where it faced.
-/// - Then it blows for <see cref="FanSettings.Duration"/>: a trapezoid of wind in front of it (short side at the fan),
+/// - Then it blows while the button is held, like the Beam, for at most <see cref="FanSettings.Duration"/>: a trapezoid of wind in front of it (short side at the fan),
 ///   pushing everything in it away every tick, strongest at the fan and fading to the far end: other players (slimes
 ///   and ability forms), projectiles and items (anything with a body: arrows, grenades, mines, pinballs...), platforms
 ///   (a share of the push) and smoke clouds (they drift).
-/// - Then it turns back into a slime and the cooldown starts (its timer is pinned to 0 until then).
+/// - Releasing the button (also during the transformation) or running out of time turns it back into a slime, then
+///   the cooldown starts (its timer is pinned to 0 until then).
 /// Sim code: inputs, Fix math and objects in a fixed order; the fan and wind are visuals drawn from this state.
 /// </summary>
 public class FanAbility : AbilityMonoBehaviour
@@ -108,6 +109,13 @@ public class FanAbility : AbilityMonoBehaviour
         StateTime += dt;
         Turn(dt);
 
+        // Like the Beam: it only lasts while the button is held.
+        if (CurrentState is State.Transforming or State.Blowing && !_player.AbilityButtonIsDown(_slot))
+        {
+            Return();
+            return;
+        }
+
         switch (CurrentState)
         {
             case State.Transforming when StateTime >= (Fix)FanSettings.TransformTime:
@@ -116,15 +124,22 @@ public class FanAbility : AbilityMonoBehaviour
             case State.Blowing:
                 Blow(dt);
                 if (StateTime >= (Fix)FanSettings.Duration)
-                {
-                    SetState(State.Returning);
-                    GetComponent<FanVisuals>()?.OnTransform(toFan: false);
-                }
+                    Return();
                 break;
             case State.Returning when StateTime >= (Fix)FanSettings.TransformTime:
                 Stop();
                 break;
         }
+    }
+
+    /// <summary>Turn back into a slime; from halfway through the transformation, it goes back from where it got to.</summary>
+    private void Return()
+    {
+        Fix transformTime = (Fix)FanSettings.TransformTime;
+        Fix done = CurrentState == State.Transforming ? Fix.Min(StateTime, transformTime) : transformTime;
+        SetState(State.Returning);
+        StateTime = transformTime - done;
+        GetComponent<FanVisuals>()?.OnTransform(toFan: false);
     }
 
     private bool CasterUsable() =>
@@ -179,8 +194,8 @@ public class FanAbility : AbilityMonoBehaviour
     }
 
     /// <summary>
-    /// The fan's head (motor): its stand's foot (0.4 fan sizes below it) rests where the slime's bottom was, so the
-    /// bigger fan stands on the floor instead of sinking into it.
+    /// The fan's cage center (the sprite's pivot): the foot's bottom (<see cref="FanSkill.FootBelowPivot"/> fan sizes
+    /// below it) rests where the slime's bottom was, so the bigger fan stands on the floor instead of sinking into it.
     /// </summary>
     internal Vec2 HeadPosition
     {
@@ -188,13 +203,13 @@ public class FanAbility : AbilityMonoBehaviour
         {
             Fix radius = _caster.playerPhysics.radius;
             Fix size = Fix.Max((Fix)FanSettings.FanSize, (Fix)0.1f) * radius;
-            return _caster.body.position + Up * (size * (Fix)0.4f - radius);
+            return _caster.body.position + Up * (size * (Fix)FanSkill.FootBelowPivot - radius);
         }
     }
 
     /// <summary>The short side's middle: at the fan's cage.</summary>
     internal Vec2 WindOrigin =>
-        HeadPosition + Direction * (Fix.Max((Fix)FanSettings.FanSize, (Fix)0.1f) * _caster.playerPhysics.radius * (Fix)0.2f);
+        HeadPosition + Direction * (Fix.Max((Fix)FanSettings.FanSize, (Fix)0.1f) * _caster.playerPhysics.radius * (Fix)FanSkill.CageFront);
 
     internal Fix WindLength => Fix.Max((Fix)FanSettings.WindLength, (Fix)0.1f) * Scale;
 

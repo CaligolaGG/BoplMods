@@ -7,11 +7,22 @@ namespace CaliSkills.Abilities.Fan;
 /// <summary>Fan: turn into an electric fan that blows everything away (see <see cref="FanAbility"/>).</summary>
 internal sealed class FanSkill : Skill
 {
-    /// <summary>The fan's parts, 1 unit across, the fan's pivot (motor) in the middle, blowing towards +x.</summary>
-    internal static Sprite StandSprite { get; private set; }
-    internal static Sprite HousingSprite { get; private set; }
-    internal static Sprite CageSprite { get; private set; }
-    internal static Sprite BladeSprite { get; private set; }
+    /// <summary>
+    /// The fan (Assets/fan_body.png): 1 unit tall, seen from the front-left, blowing towards -x, pivot at the cage's
+    /// center. <see cref="TintSprite"/> (Assets/fan_tint.png) is its yellow parts as white, drawn over it in the slime's color.
+    /// </summary>
+    internal static Sprite BodySprite { get; private set; }
+    internal static Sprite TintSprite { get; private set; }
+
+    /// <summary>The cage's center in the fan sprite (0..1, y up), and how far below it the foot's bottom is (fan heights).</summary>
+    internal static readonly Vector2 SpritePivot = new(189f / 512f, 1f - 217f / 512f);
+    internal const float FootBelowPivot = 217f / 512f;
+
+    /// <summary>The cage's front, ahead of the pivot (fan heights): where the wind starts.</summary>
+    internal const float CageFront = 0.3f;
+
+    /// <summary>Looped while the fan blows (Assets/fan_wind.wav).</summary>
+    internal static AudioClip WindSound { get; private set; }
 
     /// <summary>A wind streak along +x, 1 unit long.</summary>
     internal static Sprite StreakSprite { get; private set; }
@@ -27,8 +38,19 @@ internal sealed class FanSkill : Skill
 
     // Everything is read live.
 
-    public override Sprite CreateIcon(NamedSpriteList abilityList) =>
-        SpriteFactory.LikeReference(abilityList.sprites[2].sprite, Name, PaintIcon);
+    public override Sprite CreateIcon(NamedSpriteList abilityList)
+    {
+        Sprite reference = abilityList.sprites[2].sprite;
+        try
+        {
+            return EmbeddedAssets.LoadRoundIconLike("fan_icon.png", reference, 0.95f);
+        }
+        catch (System.Exception e)
+        {
+            Plugin.Log.LogWarning($"Fan: icon not loaded ({e.Message}), using a drawn one.");
+            return SpriteFactory.LikeReference(reference, Name, PaintIcon);
+        }
+    }
 
     /// <summary>
     /// The "prefab" the game instantiates for every player that picked the skill: under the inactive prefab root, so its
@@ -36,10 +58,16 @@ internal sealed class FanSkill : Skill
     /// </summary>
     public override GameObject CreatePrefab(NamedSpriteList abilityList)
     {
-        StandSprite = SpriteFactory.Square(256, 1f, "FanStand", (u, v) => Stand(u, v) ?? default);
-        HousingSprite = SpriteFactory.Square(256, 1f, "FanHousing", (u, v) => Housing(u, v) ?? default);
-        CageSprite = SpriteFactory.Square(256, 1f, "FanCage", (u, v) => Cage(u, v) ?? default);
-        BladeSprite = SpriteFactory.Square(128, 1f, "FanBlade", PaintBlade);
+        BodySprite = EmbeddedAssets.LoadSprite("fan_body.png", 1f, SpritePivot);
+        TintSprite = EmbeddedAssets.LoadSprite("fan_tint.png", 1f, SpritePivot);
+        try
+        {
+            WindSound = EmbeddedAssets.LoadWav("fan_wind.wav");
+        }
+        catch (System.Exception e)
+        {
+            Plugin.Log.LogWarning($"Fan: wind sound not loaded: {e.Message}");
+        }
         StreakSprite = SpriteFactory.Square(128, 1f, "FanStreak", PaintStreak);
 
         var go = new GameObject(Name);
@@ -128,16 +156,6 @@ internal sealed class FanSkill : Skill
         return default;
     }
 
-    /// <summary>One blade seen edge-on: a light lens shape, see-through (it's spinning).</summary>
-    private static Color32 PaintBlade(float u, float v)
-    {
-        float ex = u / 0.12f, ey = v / 0.48f;
-        float e = ex * ex + ey * ey;
-        if (e > 1f)
-            return default;
-        return new Color32(210, 225, 240, (byte)(140 * (1f - e * 0.6f)));
-    }
-
     /// <summary>A wind streak: a thin white line fading at both ends.</summary>
     private static Color32 PaintStreak(float u, float v)
     {
@@ -148,7 +166,7 @@ internal sealed class FanSkill : Skill
         return new Color32(255, 255, 255, (byte)(255 * alpha));
     }
 
-    /// <summary>A fan blowing wind lines, on a light blue disc.</summary>
+    /// <summary>Fallback icon if the PNG can't be loaded: a drawn fan blowing wind lines, on a light blue disc.</summary>
     private static Color32 PaintIcon(float u, float v)
     {
         const float s = 0.62f;

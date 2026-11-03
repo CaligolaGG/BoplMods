@@ -12,7 +12,7 @@ internal static class FanSettings
     [Description("Seconds before the fan can be used again, counted from when you're a slime again.")]
     public static float AbilityCooldown = 4f;
 
-    [Description("Seconds the fan blows (not counting the transformations).")]
+    [Description("Longest the fan blows while you hold the button (not counting the transformations); releasing it stops the fan earlier.")]
     public static float Duration = 4f;
 
     [Description("Seconds the transformation takes, slime to fan and back (no wind meanwhile).")]
@@ -38,7 +38,7 @@ internal static class FanSettings
 
     [Category("Wind strength")]
     [Description("Push right at the fan: speed added every second, in units per second.")]
-    public static float StrengthNear = 500f;
+    public static float StrengthNear = 400f;
 
     [Category("Wind strength")]
     [Description("Push at the far end of the wind (it fades from the fan's strength to this).")]
