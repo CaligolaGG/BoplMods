@@ -3,7 +3,12 @@ using UnityEngine;
 
 namespace CaliSkills.Abilities.NothingPersonal;
 
-/// <summary>"Nothing Personal Kid": teleport behind the furthest player (see <see cref="NothingPersonalAbility"/>).</summary>
+/// <summary>
+/// "Nothing Personal Kid": teleport behind the furthest player (see <see cref="NothingPersonalAbility"/>).
+/// Skill vs ability: this class is the definition, used once at start-up (registered by Plugin.Awake): name, offensive
+/// flag, settings, icon and the prefab the game copies for every player who picks it. What happens in a match is in
+/// <see cref="NothingPersonalAbility"/>, a component on that prefab; tuning values are in <see cref="NothingPersonalSettings"/>.
+/// </summary>
 internal sealed class NothingPersonalSkill : Skill
 {
     public override string Name => "Nothing Personal Kid";

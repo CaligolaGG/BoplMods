@@ -170,24 +170,55 @@ public class PinballBall : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
 
         PlayerBody victimBody = other.GetComponent<PlayerBody>();
         Vec2 victimPos = victimBody != null ? victimBody.position : other.position;
+        Vec2 victimVelocity = VelocityOf(other.gameObject, victimBody);
 
-        Vec2 knockDir = Vec2.NormalizedSafe(Velocity);
+        // From the player to the ball. The ball must always leave on this side: the physics may have already bounced it
+        // off the player before this callback (then it's moving away), or the player may be running into a ball that
+        // moves away from them; reflecting the velocity in those cases sent it back through the player.
+        Vec2 normal = Vec2.NormalizedSafe(Position - victimPos);
+        Vec2 v = Velocity;
+
+        // The player is knocked along the ball's travel if the ball came at them, else straight away from it.
+        Vec2 knockDir = Vec2.Dot(v, -normal) > Fix.Zero ? Vec2.NormalizedSafe(v) : -normal;
         if (knockDir == Vec2.zero)
             knockDir = Vec2.NormalizedSafe(victimPos - Position);
         PinballKnock.Apply(other.gameObject, victimBody, knockDir * Knockback, Tuning);
 
-        // Bumper bounce: reflect the ball's velocity on the line between the two centers.
-        Vec2 normal = Vec2.NormalizedSafe(Position - victimPos);
+        // Bumper bounce, in the player's frame: an approaching ball is reflected on the line between the two centers;
+        // one already leaving keeps going away, pushed further out.
         if (normal != Vec2.zero && _body.HasBeenInitialized)
         {
-            Vec2 v = Velocity;
-            Vec2 reflected = v - normal * ((Fix)2L * Vec2.Dot(v, normal));
-            // A ball at rest (e.g. a football before its first kick) flies off away from the player.
-            Vec2 dir = Vec2.NormalizedSafe(reflected);
-            _body.velocity = (dir == Vec2.zero ? normal : dir) * Speed * (Fix)Tuning.PlayerBouncePower;
+            Vec2 relative = v - victimVelocity;
+            Fix approach = Vec2.Dot(relative, normal);
+            Vec2 outgoing = approach < Fix.Zero
+                ? victimVelocity + relative - normal * ((Fix)2L * approach)
+                : Vec2.NormalizedSafe(v) + normal;
+            Vec2 dir = Vec2.NormalizedSafe(outgoing);
+            // Never back towards the player (e.g. a slow ball hit by a fast player moving the other way).
+            if (dir == Vec2.zero || Vec2.Dot(dir, normal) <= Fix.Zero)
+                dir = Vec2.NormalizedSafe(dir + normal * ((Fix)2L * Fix.Max(Fix.Zero, -Vec2.Dot(dir, normal)) + (Fix)0.1f));
+            if (dir == Vec2.zero)
+                dir = normal;
+            _body.velocity = dir * Speed * (Fix)Tuning.PlayerBouncePower;
         }
 
         AudioManager.Get().Play("rockBounce");
+    }
+
+    /// <summary>How fast a player moves: a slime stuck to a platform moves along it at its grounded speed.</summary>
+    private static Vec2 VelocityOf(GameObject player, PlayerBody body)
+    {
+        PlayerPhysics physics = player.GetComponent<PlayerPhysics>();
+        StickyRoundedRectangle ground = physics != null && physics.IsGrounded() ? physics.getAttachedGround() : null;
+        if (ground != null && !ground.IsDestroyed && body != null)
+        {
+            Vec2 n = Vec2.NormalizedSafe(ground.currentNormal(body));
+            return new Vec2(n.y, -n.x) * physics.groundedSpeed;
+        }
+        if (body != null)
+            return body.Velocity;
+        BoplBody bopl = player.GetComponent<BoplBody>();
+        return bopl != null ? bopl.velocity : Vec2.zero;
     }
 
     /// <returns>False if this ball hit that player too recently.</returns>

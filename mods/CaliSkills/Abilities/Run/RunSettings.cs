@@ -13,5 +13,5 @@ internal static class RunSettings
     public static float SpeedMultiplier = 1.5f;
 
     [Description("Seconds of cooldown, starting when the button is released (or another ability stops the run).")]
-    public static float AbilityCooldown = 3f;
+    public static float AbilityCooldown = 2f;
 }

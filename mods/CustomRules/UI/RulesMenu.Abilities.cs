@@ -140,6 +140,20 @@ internal sealed partial class RulesMenu
             ? "Set by the host. Right-click an ability to see its stats."
             : "Right-click: change the ability's stats. Middle-click: disable / re-enable it. Applies to every player.");
 
+        // Show hitboxes: a plain checkbox (pending until Apply like everything else here).
+        Rule hitboxes = ShowHitboxesRule.Rule;
+        if (hitboxes != null)
+        {
+            GUILayout.BeginHorizontal();
+            GUI.enabled = !_readOnly;
+            _texts[hitboxes] = GUILayout.Toggle(_texts[hitboxes] == bool.TrueString,
+                " Show hitboxes (draws the abilities' hidden hitboxes in red during matches)")
+                ? bool.TrueString
+                : bool.FalseString;
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
+        }
+
         IReadOnlyList<string> names = AbilityRules.AbilityNames();
         HashSet<string> disabled = PendingDisabled;
         _abilitiesScroll = GUILayout.BeginScrollView(_abilitiesScroll);

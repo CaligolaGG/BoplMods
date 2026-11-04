@@ -1,6 +1,9 @@
 using BepInEx;
 using BepInEx.Logging;
 using CaliSkills.Abilities.Bat;
+using CaliSkills.Abilities.Chad;
+using CaliSkills.Abilities.Charge;
+using CaliSkills.Abilities.Chickenator;
 using CaliSkills.Abilities.Fan;
 using CaliSkills.Abilities.NothingPersonal;
 using CaliSkills.Abilities.Omae;
@@ -31,6 +34,9 @@ public class Plugin : BaseUnityPlugin
         SkillRegistry.Add(new BatSkill());
         SkillRegistry.Add(new RpsSkill());
         SkillRegistry.Add(new FanSkill());
+        SkillRegistry.Add(new ChickenatorSkill());
+        SkillRegistry.Add(new ChargeSkill());
+        SkillRegistry.Add(new ChadSkill());
         CustomRulesStats.RegisterIfInstalled();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.

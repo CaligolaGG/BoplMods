@@ -51,12 +51,23 @@ Index 0 is `NullAbility`, the empty slot.
 
 Added by `mods/CaliSkills` to the end of the `abilityIcons` list (their IDs come after 30, in registration order). Cooldowns are the defaults in each skill's `<Skill>Settings.cs`; the lobby host can change them in CustomRules (Abilities → right-click the skill).
 
+Code layout per skill (`mods/CaliSkills/Abilities/<Skill>/`):
+
+| File | Role |
+|---|---|
+| `<Skill>Skill.cs` | The definition, used once at start-up: name, offensive flag, settings type, icon, and the prefab the game copies for every player who picks it. |
+| `<Skill>Ability.cs` | The behaviour in a match: a component on that prefab, one copy per player per round, run by the game's simulation (button press, per-tick logic, cooldown). Only the instant skills (Run, Wooden Bat, Nothing Personal Kid) have one; Pinball and Omae reuse the vanilla Grenade thrower and keep their match logic in other files (e.g. `PinballBall.cs`, `OmaePoke.cs`). |
+| `<Skill>Settings.cs` | The tuning values (defaults), shown as host-editable stats in CustomRules. |
+
 | Ability | Offensive | Cooldown (s) | What it does |
 |---|---|---|---|
-| Pinball | | 5 | Thrown like the Grenade: a bouncing ball that knocks players back (never kills) for 10 s. |
+| Pinball | | 4 | Thrown like the Grenade: a bouncing ball that knocks players back (never kills) for 10 s. |
 | Omae wa mo shindeiru | ✔ | 6 | A poke (red cone); marked players die after 20 s, poking them again takes 5 s off. |
-| Run | | 3 | Hold to be 20% faster; the cooldown starts on release. |
-| Nothing Personal Kid | | 10 | Teleports behind the furthest player, then briefly immune. |
+| Run | | 2 | Hold to be 20% faster; the cooldown starts on release. |
+| Nothing Personal Kid | | 8 | Teleports behind the furthest player, then briefly immune. |
 | Wooden Bat | ✔ (not with `NoSquashing`) | 3 | Hold and release to swing: shoves and knocks players, squashes them against platforms, deflects projectiles, pogo off platforms. |
 | Rock Paper Scissors | ✔ | 3 | Hold (yellow circle), release to stop time and duel the closest enemy slime in it at rock paper scissors; the loser is squashed, a draw puts the challenged player's abilities on cooldown. |
+| Chickenator | | 4 | A potion thrown like the Grenade: bursts on players, platforms or when its fuse runs out; everyone in the burst (you too) is a chicken for 2 s (no abilities, half jump height, heavier, slower). |
+| Charge | ✔ | 4 | Hold up to 3 s (hang in place, grow up to 50%, aim), release to dash: further and harder the longer you held; players, projectiles and the platform it slams into are knocked; players are squashed if they hit a platform fast enough. |
+| Chad mode | ✔ | 3 | Become the Throw ability's muscly slime until all three moves are used; the ability buttons become one-time moves: Slam (squashes players under you), Charge (short horizontal dash; slimes hit are stunned 1.25 s, keeping their momentum), Aura farm (1 s of invincibility and crowd-control immunity; reflects projectiles, beams and rays, pushes smoke away, turns black holes into white holes, reveals invisible slimes). No time limit. |
 | Fan | | 6 | Become a fan for 3 s that turns towards your aim and blows a trapezoid of wind, pushing players, projectiles, platforms and smoke away (strongest near the fan). |

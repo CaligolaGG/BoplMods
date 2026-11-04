@@ -28,6 +28,7 @@ public class Plugin : BaseUnityPlugin
 
         BasicRules.Register();
         AbilityRules.Register();
+        ShowHitboxesRule.Register();
         AbilityMaxUseRule.Register();
         VanillaAbilityStats.Register();
         RuleProfiles.Init();

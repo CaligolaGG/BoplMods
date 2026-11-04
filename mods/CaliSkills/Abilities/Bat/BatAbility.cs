@@ -11,7 +11,8 @@ namespace CaliSkills.Abilities.Bat;
 /// - Pressed and held: the bat is raised behind the slime, aimed with the movement input (like the Bow). The cooldown
 ///   waits (its timer is pinned to 0 until the swing ends).
 /// - Released: the bat sweeps <see cref="BatSettings.SwingArc"/> degrees through the aimed direction in
-///   <see cref="BatSettings.SwingTime"/> seconds, top to bottom on the side the slime aims at.
+///   <see cref="BatSettings.SwingTime"/> seconds, top to bottom on the side the slime aims at, top and bottom in the
+///   slime's own frame (upside down on a ceiling, it swings towards the ceiling).
 /// The bat is a solid moving capsule from the slime's center outwards, simulated here (not a game platform, so nothing
 /// sticks to it):
 /// - other players' bodies it touches are pushed out of it and knocked along the swing (once per swing, a share of the
@@ -22,6 +23,8 @@ namespace CaliSkills.Abilities.Bat;
 /// - if the bat hits a platform, the swing stops there and the slime bounces away from it (pogo);
 /// - the slime holding it is never hit by it.
 /// Sim code: inputs and Fix math only, bodies in a fixed order. The bat sprite is a visual drawn from the sim state.
+/// Skill vs ability: this class is the behaviour in a match (one copy per player per round, run by the game's
+/// simulation); its definition (name, icon, prefab, offensive flag) is <see cref="BatSkill"/>.
 /// </summary>
 public class BatAbility : AbilityMonoBehaviour
 {
@@ -149,15 +152,34 @@ public class BatAbility : AbilityMonoBehaviour
     private bool CasterUsable() =>
         _caster != null && !_caster.IsDestroyed && _caster.isActiveAndEnabled && !_caster.isInAbility && _player.IsAlive;
 
-    /// <summary>Aim direction (input, else facing), and which way round the bat goes (top to bottom on that side).</summary>
+    /// <summary>
+    /// Aim direction (input, else facing), and which way round the bat goes: from the slime's top to its bottom on that
+    /// side, in the slime's own frame (its up = the platform's normal, or its rotation in the air). A slime upside down
+    /// on a ceiling raises the bat away from the ceiling and swings it into the ceiling, as a standing slime swings into
+    /// the floor, instead of starting the swing inside the platform.
+    /// </summary>
     private void Aim(out Vec2 aim, out Fix sign)
     {
-        aim = Vec2.NormalizedSafe(_player.AimVector());
+        Vec2 up = SlimeUp();
+        var forward = new Vec2(up.y, -up.x); // the slime's right
         bool facingRight = _caster.isFacingRight();
+        aim = Vec2.NormalizedSafe(_player.AimVector());
         if (aim == Vec2.zero)
-            aim = facingRight ? Vec2.right : Vec2.left;
-        bool right = aim.x > Fix.Zero || (aim.x == Fix.Zero && facingRight);
-        sign = right ? -Fix.One : Fix.One; // clockwise when aiming right
+            aim = facingRight ? forward : -forward;
+        // Up on the aim's left (counter-clockwise of it) = go clockwise, like aiming right when standing.
+        Fix cross = aim.x * up.y - aim.y * up.x;
+        bool clockwise = cross > Fix.Zero || (cross == Fix.Zero && facingRight);
+        sign = clockwise ? -Fix.One : Fix.One;
+    }
+
+    /// <summary>The slime's up: away from the platform it's stuck to, else its own rotation (world up as a fallback).</summary>
+    private Vec2 SlimeUp()
+    {
+        PlayerPhysics physics = _caster.playerPhysics;
+        StickyRoundedRectangle ground = physics.IsGrounded() ? physics.getAttachedGround() : null;
+        Vec2 up = ground != null && !ground.IsDestroyed ? ground.currentNormal(_caster.body) : _caster.body.up;
+        up = Vec2.NormalizedSafe(up);
+        return up == Vec2.zero ? Vec2.up : up;
     }
 
     private void StartSwing()
@@ -404,6 +426,10 @@ public class BatAbility : AbilityMonoBehaviour
         t.position = new Vector3((a.x + b.x) / 2f, (a.y + b.y) / 2f, 0f);
         t.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg);
         t.localScale = new Vector3(Vector2.Distance(a, b), BatSettings.BatThickness * (float)Scale / BatSkill.SpriteHalfThickness, 1f);
+
+        // Show hitboxes: the bat's capsule (only hits while swinging).
+        if (_state == State.Swinging)
+            Core.Hitboxes.Capsule(a, b, BatSettings.BatThickness * (float)Scale, _caster.spriteRen);
 
         SpriteRenderer slime = _caster.spriteRen;
         if (slime != null)

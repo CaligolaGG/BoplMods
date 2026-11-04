@@ -3,7 +3,12 @@ using UnityEngine;
 
 namespace CaliSkills.Abilities.Bat;
 
-/// <summary>Wooden Bat: hold to raise the bat, release to swing it (see <see cref="BatAbility"/>).</summary>
+/// <summary>
+/// Wooden Bat: hold to raise the bat, release to swing it (see <see cref="BatAbility"/>).
+/// Skill vs ability: this class is the definition, used once at start-up (registered by Plugin.Awake): name, offensive
+/// flag, settings, icon and the prefab the game copies for every player who picks it. What happens in a match is in
+/// <see cref="BatAbility"/>, a component on that prefab; tuning values are in <see cref="BatSettings"/>.
+/// </summary>
 internal sealed class BatSkill : Skill
 {
     /// <summary>The bat's barrel radius in <see cref="BatSprite"/>, whose length is 1 (for scaling it to the hitbox).</summary>

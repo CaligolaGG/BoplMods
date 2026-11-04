@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- Abilities window: new "Show hitboxes" checkbox. Ability mods that support it (CaliSkills) draw their hidden hitboxes in red during matches, for testing. Saved and synced like every rule.
+
 ## 1.0.1
 - Abilities window (Rules tab → Abilities): every ability in a grid. Right-click one to change its stats, saved and used by every player: the game's abilities get multipliers for cooldown, duration, charge time, charge power, knockback, speed and size (where they apply), abilities from mods that offer them (e.g. CaliSkills) their own settings. Middle-click to disable / re-enable it.
 - Disabled abilities can't be picked (greyed out, red "no" sign) and Random never gives them, like the offensive filters. The host can also middle-click abilities in the character select grid.

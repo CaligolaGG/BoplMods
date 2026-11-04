@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>CustomRules</AssemblyName>
     <RootNamespace>CustomRules</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Custom match rules set by the lobby host: cooldowns, player size, gravity, speed, permanent invisibility.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->

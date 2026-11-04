@@ -12,6 +12,8 @@ namespace CaliSkills.Abilities.Run;
 ///   stopped by another ability it needs a release before it can run again.
 /// The speed change lives on the slime's PlayerPhysics only while running, and is undone exactly when it stops.
 /// Sim code only: driven by synced inputs and Fix math.
+/// Skill vs ability: this class is the behaviour in a match (one copy per player per round, run by the game's
+/// simulation); its definition (name, icon, prefab, offensive flag) is <see cref="RunSkill"/>.
 /// </summary>
 public class RunAbility : AbilityMonoBehaviour
 {

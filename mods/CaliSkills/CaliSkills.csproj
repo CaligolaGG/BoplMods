@@ -4,7 +4,7 @@
     <AssemblyName>CaliSkills</AssemblyName>
     <RootNamespace>CaliSkills</RootNamespace>
     <Version>1.5.2</Version>
-    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat, Rock Paper Scissors, Fan.</Description>
+    <Description>A pack of new abilities for Bopl Battle: Pinball, Omae wa mo shindeiru, Run, Nothing Personal Kid, Wooden Bat, Rock Paper Scissors, Fan, Chickenator, Charge, Chad mode.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caliskills</BepInExPluginGuid>

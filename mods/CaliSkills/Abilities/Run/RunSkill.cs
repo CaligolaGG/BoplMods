@@ -3,7 +3,12 @@ using UnityEngine;
 
 namespace CaliSkills.Abilities.Run;
 
-/// <summary>Run: hold the button to be faster (see <see cref="RunAbility"/>).</summary>
+/// <summary>
+/// Run: hold the button to be faster (see <see cref="RunAbility"/>).
+/// Skill vs ability: this class is the definition, used once at start-up (registered by Plugin.Awake): name, offensive
+/// flag, settings, icon and the prefab the game copies for every player who picks it. What happens in a match is in
+/// <see cref="RunAbility"/>, a component on that prefab; tuning values are in <see cref="RunSettings"/>.
+/// </summary>
 internal sealed class RunSkill : Skill
 {
     public override string Name => "Run";

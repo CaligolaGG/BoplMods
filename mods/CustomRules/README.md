@@ -49,6 +49,7 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 ## Abilities
 
 **Rules tab → Abilities** opens a grid of every ability:
+- **Show hitboxes** (checkbox at the top): abilities from mods that support it (e.g. CaliSkills) draw their hidden hitboxes in red during matches, for testing.
 - **Right-click** an ability to change its stats. The game's abilities have multipliers (1 = as in the game) for the stats they have: **cooldown, duration, charge time, charge power, knockback, speed, size**; each stat's hint says what it changes for that ability (e.g. Grenade: fuse time, throw charge, throw speed, grenade size). Abilities from mods that offer stats (e.g. CaliSkills) show their own settings. Every player uses the host's values. Abilities with changed stats get a **yellow border** (a yellow ring in the character select grid).
 - **Middle-click** an ability to **disable** it (red "no" sign) or enable it again. Disabled abilities can't be picked and Random never gives them. The host can also middle-click abilities directly in the character select grid.
 - Press **Apply** to save. Stats and disabled abilities are saved in profiles too.

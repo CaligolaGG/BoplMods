@@ -21,6 +21,31 @@ internal static class CustomRulesStats
 
     private static bool _installed;
 
+    /// <summary>The host's "Show hitboxes" checkbox (CustomRules' abilities window); false without CustomRules.</summary>
+    internal static bool ShowHitboxes
+    {
+        get
+        {
+            if (!_installed || _noHitboxRule)
+                return false;
+            try
+            {
+                return ReadShowHitboxes();
+            }
+            catch (System.Exception)
+            {
+                // An older CustomRules without the setting.
+                _noHitboxRule = true;
+                return false;
+            }
+        }
+    }
+
+    private static bool _noHitboxRule;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ReadShowHitboxes() => CustomRules.Rules.ShowHitboxesRule.Active;
+
     internal static void RegisterIfInstalled()
     {
         _installed = Chainloader.PluginInfos.ContainsKey(CustomRulesGuid);

@@ -24,7 +24,7 @@ internal static class PinballSettings
     public static float BallKnockback = 80f;
 
     [Description("Seconds before the skill can be used again (not charge-scaled).")]
-    public static float AbilityCooldown = 5f;
+    public static float AbilityCooldown = 4f;
 
     [Description("Seconds the ball keeps bouncing after the throw (not charge-scaled).")]
     public static float AbilityDuration = 10f;

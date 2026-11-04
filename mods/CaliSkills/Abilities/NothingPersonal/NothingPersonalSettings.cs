@@ -10,7 +10,7 @@ namespace CaliSkills.Abilities.NothingPersonal;
 internal static class NothingPersonalSettings
 {
     [Description("Seconds before the skill can be used again.")]
-    public static float AbilityCooldown = 10f;
+    public static float AbilityCooldown = 8f;
 
     [Description("Seconds the teleport takes: you vanish at once and appear at the marker after this (0 = instant).")]
     public static float TravelTime = 0.1f;

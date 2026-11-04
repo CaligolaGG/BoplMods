@@ -56,6 +56,38 @@ Hold the button: a **yellow circle** shows around you (you can still move). Rele
 - The wind is **strongest right at the fan** and fades towards the far end.
 - Cooldown: **6 seconds**, from when you're a slime again.
 
+### Chickenator
+
+Throw a **potion**, aimed and charged like the Grenade.
+
+- It **bursts** when it hits a player, a platform or a wall, or by itself when its fuse runs out, even in your hand if you hold it too long.
+- Everyone caught in the burst, **you included**, unless a platform shields them, turns into a **chicken** for **2 seconds**: chickens can't use abilities, jump half as high, are 30% heavier (they fall faster and get pushed less) and 10% slower.
+- Getting hit again while you're a chicken starts the 2 seconds again.
+- Cooldown: **4 seconds**.
+
+### Charge
+
+Hold to **load a charge** for up to **3 seconds**, then release to **dash** where you aim.
+
+- While loading, you hang in place like the Meteor, pointing where you aim, shaking and growing up to **50% bigger**. A line shows how far you'll go.
+- The longer you load, the **further** you dash and the **harder** you hit. At a full charge you launch by yourself.
+- Every player in your path is **knocked away**. If they then slam into a platform fast enough, they're **squashed**.
+- Flying things in your path (arrows, grenades...) are knocked away too. A platform in the way stops you and you stick to it, but it gets knocked too: it's pushed along your dash and shakes, harder the more you charged.
+- Cooldown: **4 seconds**, from the end of the dash.
+
+### Chad mode
+
+Become the **muscly slime** from the Throw ability until you've used all three moves. You still move and jump, but your three ability buttons become three moves, each usable **once**, shown under you in their usual order:
+
+- **Slam** (first button): the Throw ability's opening jump and ground grab: on a platform, a short wind-up and a hard hit; in the air, a straight dive down. Anyone **under you is squashed**.
+- **Charge** (second button): a short dash sideways, towards the side you're moving (A/D or left stick) or else facing: along the platform you're stuck to (walls and ceilings too), straight across in the air. Every slime you run through is **stunned** for **1.25 seconds**: it can't move, jump or use abilities, but keeps flying or sliding with the speed it had.
+- **Aura farm** (third button): you **shine** for **1 second**: invincible and immune to knockback, ragdolls, stuns and the chicken curse. While shining you also **reflect** projectiles (sent back faster than they came), beams and the Blink gun / Growth ray / Shrink ray rays (they become yours), **push smoke away**, turn any **black hole** you touch into a **white hole**, and **reveal invisible slimes** nearby.
+- Chad mode has no time limit: it ends once all three moves are used. Cooldown: **3 seconds**, from the end.
+
+## Show hitboxes
+
+With CustomRules, the host can tick **Show hitboxes** in the abilities window: the hidden hitboxes of Chad mode (slam, charge, shining area), Charge (the dash) and the Wooden Bat (the swing) are then drawn in red while they're active. Visual only, for testing.
+
 ## Ability grid
 
 With extra skills the character select grid gets taller than the screen; this mod makes it scroll (mouse wheel, or it follows the keyboard/gamepad selection).

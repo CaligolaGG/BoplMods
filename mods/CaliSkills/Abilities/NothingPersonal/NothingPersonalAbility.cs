@@ -16,6 +16,8 @@ namespace CaliSkills.Abilities.NothingPersonal;
 ///   the target, then stays immune and untouchable like after a respawn (PlayerCollision invulnerability + hurtbox off)
 ///   and can't use other abilities for a moment (<see cref="AbilityLockPatch"/>).
 /// Sim code: decisions use simulated state and Fix math only; the marker, beam and smoke are visuals.
+/// Skill vs ability: this class is the behaviour in a match (one copy per player per round, run by the game's
+/// simulation); its definition (name, icon, prefab, offensive flag) is <see cref="NothingPersonalSkill"/>.
 /// </summary>
 public class NothingPersonalAbility : AbilityMonoBehaviour
 {
