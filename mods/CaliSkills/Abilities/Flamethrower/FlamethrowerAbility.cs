@@ -102,6 +102,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
     private void Stop()
     {
         Firing = false;
+        Hooked = false;
     }
 
     /// <summary>Points the flames where the player aims (mouse / right stick); keeps the direction while it's centered.</summary>
@@ -202,6 +203,45 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         // Space: the flames push the slime the other way.
         if (IsSpace)
             Jetpack(-Direction * ((Fix)FlamethrowerSettings.JetpackPush * dt));
+
+        // Hooked to a platform with a grappling hook: the fire runs down the rope to it, however long the rope is
+        // (it burns / melts there; not on space maps).
+        StickyRoundedRectangle hooked = null;
+        Vec2 hookPoint = Vec2.zero;
+        Hooked = !IsSpace && HookedPlatform(out hooked, out hookPoint);
+        if (Hooked && FlamethrowerSettings.RopeCarriesFlames)
+        {
+            if (IsIce)
+                IceMelt.Hit(hooked, hookPoint);
+            else if (FlamethrowerSettings.PlatformsCatchFire)
+                PlatformFire.Ignite(hooked, hookPoint, owner);
+        }
+    }
+
+    /// <summary>Whether the caster was hooked to a platform with a grappling hook in the last tick (for the visuals).</summary>
+    internal bool Hooked { get; private set; }
+
+    /// <summary>
+    /// The platform the caster's grappling hook rope is attached to (Hookshot: the slime holds one end of the rope,
+    /// a <see cref="RopeAttachment"/> on a platform the other), and where.
+    /// </summary>
+    private bool HookedPlatform(out StickyRoundedRectangle platform, out Vec2 point)
+    {
+        platform = null;
+        point = Vec2.zero;
+        RopeBody rope = _caster.body.ropeBody;
+        if (rope == null || !rope.enabled || !rope.hookHasArrived || rope.hasBeenDettached)
+            return false;
+        foreach (RopeAttachment attachment in FindObjectsOfType<RopeAttachment>())
+        {
+            if (attachment.IsDestroyed || attachment.GetInitializedRopeBody() != rope || !attachment.IsPlatformAttachment() ||
+                attachment.topAttachment == _caster.body.topAttachment)
+                continue;
+            platform = attachment.GetPlatformParent();
+            point = platform.PositionFromLocalPlayerPos(attachment.LocalPlatformPosition, Fix.Zero);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>

@@ -34,6 +34,10 @@ internal static class FlamethrowerSettings
     [Description("Whether the flames blow up mines they reach.")]
     public static bool DetonateMines = true;
 
+    [Category("Flames")]
+    [Description("Whether the flames run down your grappling hook's rope to the platform it's hooked to (it burns, or melts on ice maps), however long the rope.")]
+    public static bool RopeCarriesFlames = true;
+
     [Category("Burning platforms (normal maps)")]
     [Description("Whether platforms hit by the flames catch fire (normal maps; never on space maps).")]
     public static bool PlatformsCatchFire = true;

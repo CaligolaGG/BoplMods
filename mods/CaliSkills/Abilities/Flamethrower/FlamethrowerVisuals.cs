@@ -25,6 +25,7 @@ public class FlamethrowerVisuals : MonoBehaviour
     private SpriteRenderer _gun;
     private AudioSource _sound;
     private float _emit;
+    private float _ropeEmit;
 
     private void Awake() => _ability = GetComponent<FlamethrowerAbility>();
 
@@ -82,6 +83,7 @@ public class FlamethrowerVisuals : MonoBehaviour
         Vector2 muzzle = grip + (Vector2)(Quaternion.Euler(0f, 0f, angle) * muzzleLocal);
 
         EmitFlames(center, muzzle, dir, slimeRen);
+        EmitRopeFire(slime, slimeRen);
         DrawHitbox(slimeRen);
         UpdateSound(!GameSessionHandler.GameIsPaused);
     }
@@ -107,6 +109,37 @@ public class FlamethrowerVisuals : MonoBehaviour
             Vector2 start = muzzle + way * Random.Range(0f, 0.3f);
             FlameParticles.Emit(FlameParticles.Kind.Flame, start, way * speed, life * Random.Range(0.85f, 1.1f),
                 length * Random.Range(0.13f, 0.19f), slimeRen, Mathf.Max(0f, reach));
+        }
+    }
+
+    /// <summary>
+    /// Hooked to a platform (not on space maps): flames running along the grappling hook's rope, from the slime to the
+    /// hook, where the platform burns or melts.
+    /// </summary>
+    private void EmitRopeFire(SlimeController slime, SpriteRenderer slimeRen)
+    {
+        if (GameSessionHandler.GameIsPaused || !_ability.Hooked || FlamethrowerAbility.IsSpace || !FlamethrowerSettings.RopeCarriesFlames)
+            return;
+        RopeBody rope = slime.body.ropeBody;
+        if (rope == null || !rope.enabled || rope.segmentCount < 2)
+            return;
+        int last = Mathf.Min(rope.segmentCount, rope.segment.Length) - 1;
+        float length = 0f;
+        for (int i = 0; i < last; i++)
+            length += Vector2.Distance((Vector2)rope.segment[i], (Vector2)rope.segment[i + 1]);
+        // About 8 flames per unit of rope per second, travelling from the slime's end to the hook.
+        _ropeEmit += Time.deltaTime * Mathf.Clamp(length * 8f, 10f, 240f);
+        float timeToHook = 0.35f;
+        while (_ropeEmit >= 1f)
+        {
+            _ropeEmit -= 1f;
+            int i = Random.Range(0, last);
+            Vector2 a = (Vector2)rope.segment[i], b = (Vector2)rope.segment[i + 1];
+            Vector2 point = Vector2.Lerp(a, b, Random.value);
+            // Towards the hook: the slime holds the rope's last segment when its end isn't the top one.
+            Vector2 along = (slime.body.topAttachment ? b - a : a - b).normalized;
+            Vector2 velocity = along * (length / timeToHook) * Random.Range(0.1f, 0.25f) + Vector2.up * Random.Range(0.5f, 1.5f);
+            FlameParticles.Emit(FlameParticles.Kind.Flame, point, velocity, Random.Range(0.18f, 0.32f), Random.Range(0.35f, 0.6f), slimeRen);
         }
     }
 

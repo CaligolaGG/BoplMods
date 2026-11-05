@@ -92,6 +92,7 @@ Hold the button to throw **flames** in a cone where you aim (mouse or right stic
 - **Normal maps**: platforms hit by the flames **catch fire** where they're hit. The fire slowly spreads along the platform and dies out **2 seconds** after the flames last touched it. Sweep the flames along a platform to set it on fire in several places (a new fire needs to be a little away from the others, at most one new fire per platform every 0.4 seconds). Players touching a burning part die (not you).
 - **Ice maps**: the flames **melt** the platforms they hit: they slowly shrink (down to 40% of their size), dripping water and steaming (the bigger the platform, the bigger the effect), and grow back to their size starting **1.5 seconds** after the last hit.
 - **Space maps**: the cone is **30% smaller** and platforms don't catch fire, but the flames push you the other way, like a **jetpack**, and the cooldown is only **1.5 seconds**.
+- **With a grappling hook**: if you're hooked to a platform while you fire, the flames run down the rope to it, however long the rope is: it **catches fire** where the hook is (normal maps) or **melts** (ice maps).
 - Cooldown: **3 seconds** (1.5 on space maps), from when the flames stop.
 
 ## Show hitboxes
