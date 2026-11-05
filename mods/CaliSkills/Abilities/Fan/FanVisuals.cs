@@ -8,7 +8,7 @@ namespace CaliSkills.Abilities.Fan;
 /// What the Fan looks like (visual only, drawn from <see cref="FanAbility"/>'s sim state; floats and Unity time are fine):
 /// - the transformation: a puff of smoke, the slime squashes down and the fan pops up out of it (and back at the end);
 /// - the fan: <see cref="FanSkill.BodySprite"/> with its yellow parts (<see cref="FanSkill.TintSprite"/>) in the
-///   slime's color, turned towards where it blows (mirrored when blowing right, so it's never upside down), humming
+///   slime's color, turned smoothly towards where it blows (mirrored, with a quick roll, so its stand stays on the floor side), humming
 ///   while it blows;
 /// - the wind: the trapezoid area, faint, and streaks rushing out of the fan, faster and brighter near it, and the
 ///   wind sound looping while it blows.
@@ -27,6 +27,14 @@ internal sealed class FanVisuals : MonoBehaviour
     private readonly float[] _streakSide = new float[StreakCount];
     private float _hum;
     private bool _hidingSlime;
+
+    /// <summary>Drawn direction (degrees), easing towards the sim's so the fan turns smoothly between ticks.</summary>
+    private float _angle;
+
+    /// <summary>Vertical mirror, 1 = as drawn (blowing left, stand below), -1 = mirrored; animated when it changes.</summary>
+    private float _flip = 1f;
+    private float _flipTarget = 1f;
+    private bool _shown;
 
     private void Awake() => _ability = GetComponent<FanAbility>();
 
@@ -95,8 +103,13 @@ internal sealed class FanVisuals : MonoBehaviour
         float scale = (float)_ability.Scale;
         float size = Mathf.Max(0.1f, FanSettings.FanSize) * (float)slime.playerPhysics.radius;
         Vector2 center = (Vector2)slime.body.position;
-        Vector2 dir = (Vector2)_ability.Direction;
-        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        Vector2 simDir = (Vector2)_ability.Direction;
+        float simAngle = Mathf.Atan2(simDir.y, simDir.x) * Mathf.Rad2Deg;
+        _angle = _shown ? Mathf.LerpAngle(_angle, simAngle, 1f - Mathf.Exp(-30f * Time.deltaTime)) : simAngle;
+        float angle = _angle;
+        Vector2 dir = new(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+        UpdateFlip(dir, (Vector2)_ability.Up);
+        _shown = true;
         int layer = slimeRen != null ? slimeRen.sortingLayerID : 0;
         int order = slimeRen != null ? slimeRen.sortingOrder : 0;
 
@@ -130,9 +143,8 @@ internal sealed class FanVisuals : MonoBehaviour
         {
             // The fan grows up out of the slime to its cage position (its foot on the floor).
             center = Vector2.Lerp(center, (Vector2)_ability.HeadPosition, Mathf.SmoothStep(0f, 1f, pop));
-            // The sprite blows left; mirrored to blow right, so the stand stays below.
-            bool right = dir.x > 0f;
-            float fanAngle = right ? angle : angle - 180f;
+            // The sprite blows left: turned half a turn more, and mirrored vertically to keep the stand on the floor side.
+            float fanAngle = angle - 180f;
             if (_ability.CurrentState == FanAbility.State.Blowing)
             {
                 _hum += Time.deltaTime;
@@ -140,11 +152,29 @@ internal sealed class FanVisuals : MonoBehaviour
             }
             Place(_body, center, fanAngle, fanScale, layer, order);
             Place(_tint, center, fanAngle, fanScale, layer, order + 1);
-            _body.flipX = _tint.flipX = right;
+            _body.flipX = _tint.flipX = false;
+            _body.transform.localScale = _tint.transform.localScale = new Vector3(fanScale, fanScale * _flip, 1f);
             _tint.color = SlimeColor(slime);
         }
 
         DrawWind(dir, angle, layer, order, scale);
+    }
+
+    /// <summary>
+    /// Keeps the stand towards the floor (away from <paramref name="up"/>): it flips over only once the fan is clearly
+    /// past straight up / down (so aiming near vertical doesn't make it jitter), with a quick roll instead of a pop.
+    /// </summary>
+    private void UpdateFlip(Vector2 dir, Vector2 up)
+    {
+        // Unmirrored, the stand is on dir's left side: right for the floor when dir × up < 0.
+        float cross = dir.x * up.y - dir.y * up.x;
+        if (!_shown)
+            _flipTarget = cross <= 0f ? 1f : -1f;
+        else if (cross < -0.25f)
+            _flipTarget = 1f;
+        else if (cross > 0.25f)
+            _flipTarget = -1f;
+        _flip = _shown ? Mathf.MoveTowards(_flip, _flipTarget, Time.deltaTime / 0.06f) : _flipTarget;
     }
 
     private float TransformProgress()
@@ -264,6 +294,7 @@ internal sealed class FanVisuals : MonoBehaviour
 
     private void Hide()
     {
+        _shown = false;
         UpdateSound(blowing: false);
         if (_hidingSlime)
         {

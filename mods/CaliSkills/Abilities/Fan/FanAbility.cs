@@ -156,25 +156,43 @@ public class FanAbility : AbilityMonoBehaviour
         SetState(State.Idle);
     }
 
-    /// <summary>Turns towards the aim (mouse / stick, else movement), at most RotationSpeed degrees per second.</summary>
+    /// <summary>Turn rate per remaining radian: the fan eases into the aim (fast when far off, gentle at the end).</summary>
+    private static readonly Fix TurnEase = (Fix)14L;
+
+    /// <summary>Slowest turn, degrees per second, so the easing still finishes.</summary>
+    private static readonly Fix MinTurnSpeed = (Fix)90L;
+
+    /// <summary>
+    /// Turns towards the aim (mouse / aim stick, like the Beam; no aim = keeps its direction): eased, at most
+    /// RotationSpeed degrees per second.
+    /// </summary>
     private void Turn(Fix dt)
     {
-        Vec2 aim = Vec2.NormalizedSafe(_player.AimVector());
-        if (aim == Vec2.zero)
-            aim = Vec2.NormalizedSafe(_player.InputVector());
-        if (aim == Vec2.zero)
+        Vec2 aim = _player.AimVector();
+        if (Vec2.Magnitude(aim) <= Constants.DEADZONE)
             return;
+        aim = Vec2.NormalizedSafe(aim);
 
         Vec2 dir = Direction;
         Fix cross = dir.x * aim.y - dir.y * aim.x;
         Fix dot = Vec2.Dot(dir, aim);
         Fix angle = Fix.Atan2(cross, dot);
-        Fix maxStep = (Fix)FanSettings.RotationSpeed * Fix.Pi / (Fix)180L * dt;
-        Fix step = Fix.Max(-maxStep, Fix.Min(maxStep, angle));
-        Fix cos = Fix.Cos(step), sin = Fix.Sin(step);
-        Direction = Vec2.NormalizedSafe(new Vec2(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos));
-        if (Direction == Vec2.zero)
+        Fix remaining = Fix.Abs(angle);
+        if (remaining <= Fix.Zero)
+            return;
+        Fix toRadians = Fix.Pi / (Fix)180L;
+        Fix maxStep = Fix.Max((Fix)FanSettings.RotationSpeed, Fix.One) * toRadians * dt;
+        Fix minStep = Fix.Min(remaining, MinTurnSpeed * toRadians * dt);
+        Fix size = Fix.Min(maxStep, Fix.Max(minStep, remaining * Fix.Min(Fix.One, TurnEase * dt)));
+        if (size >= remaining)
+        {
             Direction = aim;
+            return;
+        }
+        Fix step = angle < Fix.Zero ? -size : size;
+        Fix cos = Fix.Cos(step), sin = Fix.Sin(step);
+        Vec2 turned = new(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos);
+        Direction = Vec2.Magnitude(turned) > (Fix)0.5f ? Vec2.NormalizedSafe(turned) : aim;
     }
 
     // --- The wind area: a trapezoid from the fan's front, along Direction ---

@@ -18,7 +18,7 @@ internal static class FanSettings
     [Description("Seconds the transformation takes, slime to fan and back (no wind meanwhile).")]
     public static float TransformTime = 0.4f;
 
-    [Description("How fast the fan turns towards where you aim, in degrees per second.")]
+    [Description("Fastest the fan turns towards where you aim, in degrees per second (it eases in as it gets close).")]
     public static float RotationSpeed = 150f;
 
     [Description("Size of the fan, in slime radiuses (the wind starts at its cage).")]
