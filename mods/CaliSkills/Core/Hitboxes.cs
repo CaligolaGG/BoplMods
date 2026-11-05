@@ -5,7 +5,7 @@ namespace CaliSkills.Core;
 
 /// <summary>
 /// "Show hitboxes" (CustomRules' checkbox in the abilities window, <see cref="CustomRulesStats.ShowHitboxes"/>): skills
-/// call <see cref="Circle"/> / <see cref="Capsule"/> / <see cref="Box"/> from their LateUpdate while a hitbox is live, and it's drawn in
+/// call <see cref="Circle"/> / <see cref="Capsule"/> / <see cref="Box"/> / <see cref="Sector"/> from their LateUpdate while a hitbox is live, and it's drawn in
 /// red (see-through fill, solid outline) for that frame. Visual only. Renderers are pooled on a DontDestroyOnLoad
 /// object and hidden again at the start of every frame (Update runs before any LateUpdate).
 /// </summary>
@@ -21,14 +21,18 @@ internal sealed class Hitboxes : MonoBehaviour
         Disc,
         Bar,
         Box,
+        Sector,
     }
 
     private readonly List<SpriteRenderer> _discs = new();
     private readonly List<SpriteRenderer> _bars = new();
     private readonly List<SpriteRenderer> _boxes = new();
+    private readonly List<SpriteRenderer> _sectors = new();
+    private static readonly Dictionary<int, Sprite> SectorSprites = new();
     private int _discsUsed;
     private int _barsUsed;
     private int _boxesUsed;
+    private int _sectorsUsed;
 
     /// <summary>Whether hitboxes are drawn (the host's "Show hitboxes" setting; off without CustomRules).</summary>
     internal static bool Enabled => CustomRulesStats.ShowHitboxes;
@@ -72,6 +76,34 @@ internal sealed class Hitboxes : MonoBehaviour
         Sort(renderer, reference);
     }
 
+    /// <summary>A cone (circle sector) from <paramref name="apex"/> along <paramref name="direction"/>, <paramref name="angle"/> degrees wide.</summary>
+    internal static void Sector(Vector2 apex, Vector2 direction, float length, float angle, SpriteRenderer reference = null)
+    {
+        if (!Enabled || length <= 0f || angle <= 0f)
+            return;
+        int key = Mathf.Clamp(Mathf.RoundToInt(angle), 1, 360);
+        if (!SectorSprites.TryGetValue(key, out Sprite sprite) || sprite == null)
+        {
+            float half = key * 0.5f * Mathf.Deg2Rad;
+            sprite = SpriteFactory.Square(128, 1f, "HitboxSector" + key, (u, v) =>
+            {
+                float d = Mathf.Sqrt(u * u + v * v);
+                float a = Mathf.Abs(Mathf.Atan2(v, u));
+                if (d > 0.5f || a > half)
+                    return default;
+                // Outline: the arc and the two straight sides.
+                bool edge = d > 0.485f || (half - a) * d < 0.012f;
+                return edge ? new Color32(255, 0, 0, 255) : new Color32(255, 0, 0, 90);
+            });
+            SectorSprites[key] = sprite;
+        }
+        SpriteRenderer renderer = Get().Next(sprite, Kind.Sector);
+        renderer.sprite = sprite;
+        renderer.transform.SetPositionAndRotation(apex, Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg));
+        renderer.transform.localScale = new Vector3(length * 2f, length * 2f, 1f);
+        Sort(renderer, reference);
+    }
+
     private static void Sort(SpriteRenderer renderer, SpriteRenderer reference)
     {
         if (reference != null)
@@ -106,8 +138,8 @@ internal sealed class Hitboxes : MonoBehaviour
 
     private SpriteRenderer Next(Sprite sprite, Kind kind)
     {
-        List<SpriteRenderer> pool = kind switch { Kind.Disc => _discs, Kind.Bar => _bars, _ => _boxes };
-        int used = kind switch { Kind.Disc => _discsUsed++, Kind.Bar => _barsUsed++, _ => _boxesUsed++ };
+        List<SpriteRenderer> pool = kind switch { Kind.Disc => _discs, Kind.Bar => _bars, Kind.Box => _boxes, _ => _sectors };
+        int used = kind switch { Kind.Disc => _discsUsed++, Kind.Bar => _barsUsed++, Kind.Box => _boxesUsed++, _ => _sectorsUsed++ };
         if (used >= pool.Count)
         {
             var renderer = new GameObject("Hitbox").AddComponent<SpriteRenderer>();
@@ -128,7 +160,10 @@ internal sealed class Hitboxes : MonoBehaviour
             _bars[i].enabled = false;
         for (int i = 0; i < _boxesUsed && i < _boxes.Count; i++)
             _boxes[i].enabled = false;
+        for (int i = 0; i < _sectorsUsed && i < _sectors.Count; i++)
+            _sectors[i].enabled = false;
         _discsUsed = 0;
+        _sectorsUsed = 0;
         _barsUsed = 0;
         _boxesUsed = 0;
     }

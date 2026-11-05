@@ -66,7 +66,7 @@ internal static class ChadSettings
 
     [Category("Charge")]
     [Description("How far the stun rectangle is shifted up, away from the platform (straight up in the air), in slime radiuses (negative = down).")]
-    public static float ChargeUpOffset = 0.4f;
+    public static float ChargeUpOffset = 0f;
 
     [Category("Charge")]
     [Description("Seconds a slime caught by the charge is stunned: it can't move, jump or use abilities, but keeps its momentum.")]

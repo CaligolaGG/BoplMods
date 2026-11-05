@@ -37,6 +37,7 @@ public class Plugin : BaseUnityPlugin
         SkillRegistry.Add(new ChickenatorSkill());
         SkillRegistry.Add(new ChargeSkill());
         SkillRegistry.Add(new ChadSkill());
+        SkillRegistry.Add(new Abilities.Flamethrower.FlamethrowerSkill());
         CustomRulesStats.RegisterIfInstalled();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
