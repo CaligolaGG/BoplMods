@@ -8,8 +8,9 @@ namespace CaliSkills.Abilities.Flamethrower;
 /// Platforms set on fire by the Flamethrower (scene object, created on the first fire: reset every level). A fire is
 /// a stretch of a platform's outline: it starts where the flames hit, spreads both ways along the outline at
 /// <see cref="FlamethrowerSettings.FireSpreadSpeed"/> up to <see cref="FlamethrowerSettings.FireMaxSpread"/>, and dies
-/// <see cref="FlamethrowerSettings.FireDuration"/> after the flames last hit it (hits inside a fire keep it going;
-/// hits elsewhere on the platform start another one). Positions on the outline are the game's "local player position"
+/// <see cref="FlamethrowerSettings.FireDuration"/> after the flames last hit it (hits inside a fire keep it going).
+/// A hit at least <see cref="FlamethrowerSettings.FireMinGap"/> from every fire's starting point starts another fire on
+/// the same platform, unless one started there less than <see cref="FlamethrowerSettings.ReigniteGrace"/> ago. Positions on the outline are the game's "local player position"
 /// (0..1 around the platform, <see cref="StickyRoundedRectangle.LocalPlayerPosFromPos"/>), so fires move and turn
 /// with their platform. Players touching a burning stretch die (<see cref="FlamethrowerSettings.FireKills"/>).
 /// Sim code: platforms and players in a fixed order, Fix math; flames drawn in LateUpdate.
@@ -28,7 +29,6 @@ internal sealed class PlatformFire : MonoUpdatable
         public Fix Left;     // seconds
         public Fix Age;
         public int Owner;
-        public int Seed;
     }
 
     internal sealed class Burning
@@ -36,6 +36,8 @@ internal sealed class PlatformFire : MonoUpdatable
         public StickyRoundedRectangle Platform;
         public readonly List<Fire> Fires = new();
         public readonly List<SpriteRenderer> Flames = new();
+        public Fix SinceIgnite; // since its last new fire
+        public int Seed;
     }
 
     private static PlatformFire _instance;
@@ -65,32 +67,39 @@ internal sealed class PlatformFire : MonoUpdatable
         Burning burning = _burning.Find(b => b.Platform == platform);
         if (burning == null)
         {
-            burning = new Burning { Platform = platform };
+            burning = new Burning { Platform = platform, SinceIgnite = (Fix)1000L, Seed = _seeds++ };
             _burning.Add(burning);
         }
         Fix duration = Fix.Max((Fix)FlamethrowerSettings.FireDuration, Fix.Zero);
         Fix at = platform.LocalPlayerPosFromPos(point, Fix.Zero);
         Fix circumference = Fix.Max(platform.Circumference(), (Fix)0.01f);
 
-        // Inside a fire (or right at its edge): keep it going.
-        Fire closest = null;
-        Fix closestGap = Fix.MaxValue;
+        // Fires burning where it hit (or right at their edge) keep going; the nearest starting point is remembered.
+        Fire nearest = null;
+        Fix nearestGap = Fix.MaxValue;
         foreach (Fire fire in burning.Fires)
         {
-            Fix gap = Gap(fire.Center, at) * circumference - fire.Spread;
-            if (gap < closestGap)
+            Fix gap = Gap(fire.Center, at) * circumference;
+            if (gap <= fire.Spread + (Fix)0.5f)
             {
-                closestGap = gap;
-                closest = fire;
+                fire.Left = duration;
+                fire.Owner = owner;
+            }
+            if (gap < nearestGap)
+            {
+                nearestGap = gap;
+                nearest = fire;
             }
         }
-        if (closest != null && (closestGap <= (Fix)0.5f || burning.Fires.Count >= MaxFiresPerPlatform))
+
+        // Far enough from every fire's start, and not just after the last new fire there: a new fire.
+        bool farEnough = nearest == null || nearestGap >= Fix.Max((Fix)FlamethrowerSettings.FireMinGap, Fix.Zero);
+        bool graceOver = burning.SinceIgnite >= Fix.Max((Fix)FlamethrowerSettings.ReigniteGrace, Fix.Zero);
+        if (farEnough && graceOver && burning.Fires.Count < MaxFiresPerPlatform)
         {
-            closest.Left = duration;
-            closest.Owner = owner;
-            return;
+            burning.Fires.Add(new Fire { Center = at, Left = duration, Owner = owner });
+            burning.SinceIgnite = Fix.Zero;
         }
-        burning.Fires.Add(new Fire { Center = at, Left = duration, Owner = owner, Seed = _seeds++ });
     }
 
     /// <summary>Distance between two outline positions (0..0.5 of the way around).</summary>
@@ -114,6 +123,7 @@ internal sealed class PlatformFire : MonoUpdatable
                 Remove(i);
                 continue;
             }
+            burning.SinceIgnite += dt;
             for (int f = burning.Fires.Count - 1; f >= 0; f--)
             {
                 Fire fire = burning.Fires[f];
@@ -192,58 +202,70 @@ internal sealed class PlatformFire : MonoUpdatable
             DrawFlames(burning);
     }
 
+    /// <summary>
+    /// Flames at fixed spots along the outline (every 0.55 units), each as big as the strongest fire covering it, so
+    /// overlapping fires don't double up.
+    /// </summary>
     private static void DrawFlames(Burning burning)
     {
+        const float spacing = 0.55f;
         StickyRoundedRectangle platform = burning.Platform;
         if (platform == null || platform.IsDestroyed)
             return;
         SpriteRenderer platformRen = platform.GetSpriteRenderer();
         float circumference = Mathf.Max(0.01f, (float)platform.Circumference());
-        float spacing = 0.55f;
+        int spots = Mathf.Clamp(Mathf.FloorToInt(circumference / spacing), 1, 400);
         int used = 0;
-        foreach (Fire fire in burning.Fires)
+        for (int k = 0; k < spots; k++)
         {
-            float spread = (float)fire.Spread;
-            float left = (float)fire.Left;
-            float age = (float)fire.Age;
-            // Fading in at the start and out in the last half second.
-            float strength = Mathf.Clamp01(age / 0.15f) * Mathf.Clamp01(left / 0.5f);
-            int count = Mathf.Max(1, Mathf.CeilToInt(spread * 2f / spacing) + 1);
-            for (int k = 0; k < count; k++)
+            float at = (float)k / spots;
+            float strength = 0f;
+            foreach (Fire fire in burning.Fires)
             {
-                float offset = count == 1 ? 0f : -spread + spread * 2f * k / (count - 1);
-                float at = (float)fire.Center + offset / circumference;
-                at -= Mathf.Floor(at);
-                Fix local = (Fix)at;
-                Vector2 surface = (Vector2)platform.PositionFromLocalPlayerPos(local, Fix.Zero);
-                Vector2 outward = ((Vector2)platform.PositionFromLocalPlayerPos(local, (Fix)0.5f) - surface).normalized;
-                if (outward == Vector2.zero)
-                    outward = Vector2.up;
-                // Flames lean up a bit (fire rises), smaller at the edges of the stretch.
-                Vector2 up = (outward + Vector2.up * 0.6f).normalized;
-                float edge = spread <= 0.01f ? 1f : 1f - 0.5f * Mathf.Abs(offset) / spread;
-                float seed = fire.Seed * 7.31f + k * 1.37f;
-                float flicker = 0.75f + 0.35f * Mathf.PerlinNoise(seed, Time.time * 6f);
-                float size = 1.1f * edge * flicker * strength;
+                float spread = (float)fire.Spread;
+                float d = Mathf.Abs(at - (float)fire.Center);
+                d -= Mathf.Floor(d);
+                float gap = Mathf.Min(d, 1f - d) * circumference;
+                // Partly lit just past the edge, so a new fire shows at once; smaller towards the edges.
+                float cover = Mathf.Clamp01((spread + spacing * 0.6f - gap) / (spacing * 0.6f));
+                if (cover <= 0f)
+                    continue;
+                float edge = spread <= 0.01f ? 1f : 1f - 0.5f * Mathf.Clamp01(gap / spread);
+                // Fading in at the start and out in the last half second.
+                float fade = Mathf.Clamp01((float)fire.Age / 0.15f) * Mathf.Clamp01((float)fire.Left / 0.5f);
+                strength = Mathf.Max(strength, cover * edge * fade);
+            }
+            if (strength <= 0.02f)
+                continue;
 
-                if (used >= burning.Flames.Count)
-                {
-                    var renderer = new GameObject("CaliSkills.PlatformFlame").AddComponent<SpriteRenderer>();
-                    renderer.sprite = FlamethrowerSkill.FlameSprite;
-                    burning.Flames.Add(renderer);
-                }
-                SpriteRenderer flame = burning.Flames[used++];
-                flame.enabled = size > 0.02f;
-                float sway = (Mathf.PerlinNoise(seed + 5f, Time.time * 3f) - 0.5f) * 20f;
-                flame.transform.SetPositionAndRotation(surface - outward * 0.1f,
-                    Quaternion.Euler(0f, 0f, Mathf.Atan2(up.y, up.x) * Mathf.Rad2Deg - 90f + sway));
-                flame.transform.localScale = new Vector3(size * 0.8f, size * (0.9f + 0.4f * flicker), 1f);
-                flame.color = new Color(1f, 1f, 1f, Mathf.Clamp01(strength * 1.2f));
-                if (platformRen != null)
-                {
-                    flame.sortingLayerID = platformRen.sortingLayerID;
-                    flame.sortingOrder = platformRen.sortingOrder + 5;
-                }
+            Fix local = (Fix)at;
+            Vector2 surface = (Vector2)platform.PositionFromLocalPlayerPos(local, Fix.Zero);
+            Vector2 outward = ((Vector2)platform.PositionFromLocalPlayerPos(local, (Fix)0.5f) - surface).normalized;
+            if (outward == Vector2.zero)
+                outward = Vector2.up;
+            // Flames lean up a bit (fire rises).
+            Vector2 up = (outward + Vector2.up * 0.6f).normalized;
+            float seed = burning.Seed * 7.31f + k * 1.37f;
+            float flicker = 0.75f + 0.35f * Mathf.PerlinNoise(seed, Time.time * 6f);
+            float size = 1.1f * flicker * strength;
+
+            if (used >= burning.Flames.Count)
+            {
+                var renderer = new GameObject("CaliSkills.PlatformFlame").AddComponent<SpriteRenderer>();
+                renderer.sprite = FlamethrowerSkill.FlameSprite;
+                burning.Flames.Add(renderer);
+            }
+            SpriteRenderer flame = burning.Flames[used++];
+            flame.enabled = true;
+            float sway = (Mathf.PerlinNoise(seed + 5f, Time.time * 3f) - 0.5f) * 20f;
+            flame.transform.SetPositionAndRotation(surface - outward * 0.1f,
+                Quaternion.Euler(0f, 0f, Mathf.Atan2(up.y, up.x) * Mathf.Rad2Deg - 90f + sway));
+            flame.transform.localScale = new Vector3(size * 0.8f, size * (0.9f + 0.4f * flicker), 1f);
+            flame.color = new Color(1f, 1f, 1f, Mathf.Clamp01(strength * 1.2f));
+            if (platformRen != null)
+            {
+                flame.sortingLayerID = platformRen.sortingLayerID;
+                flame.sortingOrder = platformRen.sortingOrder + 5;
             }
         }
         for (int i = used; i < burning.Flames.Count; i++)

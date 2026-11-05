@@ -44,11 +44,19 @@ internal static class FlamethrowerSettings
 
     [Category("Burning platforms (normal maps)")]
     [Description("How fast the fire spreads along the platform, each way, in units per second.")]
-    public static float FireSpreadSpeed = 4f;
+    public static float FireSpreadSpeed = 8f;
 
     [Category("Burning platforms (normal maps)")]
     [Description("How far a fire spreads each way from where it started, in units.")]
-    public static float FireMaxSpread = 12f;
+    public static float FireMaxSpread = 13f;
+
+    [Category("Burning platforms (normal maps)")]
+    [Description("How far from where every fire on a platform started the flames must hit to start another fire on it, in units.")]
+    public static float FireMinGap = 1.5f;
+
+    [Category("Burning platforms (normal maps)")]
+    [Description("Seconds after a fire starts on a platform before another one can start on it.")]
+    public static float ReigniteGrace = 0.3f;
 
     [Category("Burning platforms (normal maps)")]
     [Description("Whether players touching a burning part of a platform die.")]
