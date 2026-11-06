@@ -16,7 +16,7 @@ internal static class ChargeSettings
     public static float MaxChargeTime = 3f;
 
     [Description("How much bigger the slime gets at a full charge (0.5 = 50% bigger). It also hits players that much further out.")]
-    public static float MaxGrowth = 0.5f;
+    public static float MaxGrowth = 0.75f;
 
     [Category("Dash")]
     [Description("Distance of the dash released right away (units, scales with the slime's size).")]
@@ -36,15 +36,15 @@ internal static class ChargeSettings
 
     [Category("Hit")]
     [Description("Knockback given to players hit by a dash released right away.")]
-    public static float MinKnockback = 30f;
+    public static float MinKnockback = 70f;
 
     [Category("Hit")]
     [Description("Knockback given to players hit by a fully charged dash.")]
-    public static float MaxKnockback = 90f;
+    public static float MaxKnockback = 100f;
 
     [Category("Hit")]
     [Description("How much players hit are also pushed aside, out of the dash's path (0 = straight ahead).")]
-    public static float SideKnock = 0.35f;
+    public static float SideKnock = 0.4f;
 
     [Category("Hit")]
     [Description("Push given to a platform the dash slams into, at a full charge (less with less charge; the Meteor's is 30). Platforms that can't move only shake.")]
@@ -56,5 +56,5 @@ internal static class ChargeSettings
 
     [Category("Hit")]
     [Description("Speed into a platform that squashes a hit player (while knocked back, and a little after). The game cuts sideways knockback to two thirds, so the default needs most of a charge.")]
-    public static float SquashSpeed = 40f;
+    public static float SquashSpeed = 20f;
 }
