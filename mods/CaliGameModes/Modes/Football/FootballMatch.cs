@@ -17,7 +17,7 @@ namespace CaliGameModes.Modes.Football;
 /// <see cref="FootballMode.TimeLimit"/>: the side with more goals wins it (a tie: everyone does, like a draw).
 /// Visuals (local): the goals' sprites, the score at the top of the screen.
 /// </summary>
-internal sealed class FootballMatch : MonoUpdatable
+internal sealed class FootballMatch : MonoUpdatable, IRespawnMatch
 {
     private static readonly Fix RespawnDelay = (Fix)2L;
     private static readonly Fix CloudLead = (Fix)0.6f;
@@ -47,7 +47,11 @@ internal sealed class FootballMatch : MonoUpdatable
 
     internal static FootballMatch Current { get; private set; }
 
-    internal Vec2 PlayerRespawn => _map.PlayerRespawn;
+    public Vec2 RespawnPosition(Player player) => _map.PlayerRespawn;
+
+    public void OnKilled(Player victim, int killerId)
+    {
+    }
 
     private void Awake() => Updater.RegisterUpdatable(this);
 

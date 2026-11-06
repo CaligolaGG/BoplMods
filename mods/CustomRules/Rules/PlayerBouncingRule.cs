@@ -9,8 +9,9 @@ namespace CustomRules.Rules;
 
 /// <summary>
 /// Player bouncing mode. Vanilla slimes pass through each other; here a <see cref="PlayerBouncer"/> (one per level)
-/// makes every pair of touching slimes bounce apart. Sub rule "bounce on everything": slimes never stick to platforms,
-/// they bounce off them instead, and each bounce gives back one jump to use in the air.
+/// makes every pair of touching slimes bounce apart (× PlayerBouncePower), except a slime big enough to eat the other.
+/// Sub rule "bounce on everything": slimes never stick to platforms, they bounce off them instead (× BouncePower), and
+/// each bounce gives back one jump to use in the air; see <see cref="BounceOnEverythingRule"/> for the exceptions.
 /// Only slimes take part, not ability forms (Bow, Rock...), whose own physics are left alone.
 /// </summary>
 [HarmonyPatch(typeof(GameSessionHandler), nameof(GameSessionHandler.SpawnPlayers))]
@@ -31,7 +32,24 @@ internal static class PlayerBouncingRule
             new GameObject("CustomRules.PlayerBouncer").AddComponent<PlayerBouncer>();
     }
 
+    /// <summary>Platform bounces (bounce on everything).</summary>
     internal static Fix BouncePower => BasicRules.BouncePower.ActiveFix;
+
+    /// <summary>Slime vs slime bounces.</summary>
+    internal static Fix PlayerBouncePower => BasicRules.PlayerBouncePower.ActiveFix;
+
+    /// <summary>
+    /// Whether <paramref name="eater"/> is big enough to eat <paramref name="food"/> (vanilla rule in
+    /// <c>SlimeController.OnCollide</c>: scale difference ≥ <c>scaleDiffBeforeNomNom</c>, other team).
+    /// </summary>
+    internal static bool CanEat(SlimeController eater, SlimeController food)
+    {
+        if (eater.body.fixtrans.Scale - food.body.fixtrans.Scale < eater.scaleDiffBeforeNomNom)
+            return false;
+        Player a = PlayerHandler.Get().GetPlayer(eater.playerNumber);
+        Player b = PlayerHandler.Get().GetPlayer(food.playerNumber);
+        return a != null && b != null && a.Team != b.Team;
+    }
 
     /// <summary>
     /// Gives a slime a velocity change, whether it's in the air or stuck to a platform. A <paramref name="hardHit"/>
@@ -108,6 +126,10 @@ internal sealed class PlayerBouncer : MonoUpdatable
 
     private static void Bounce(SlimeController a, SlimeController b)
     {
+        // A slime big enough to eat the other lets the game's bite happen instead.
+        if (PlayerBouncingRule.CanEat(a, b) || PlayerBouncingRule.CanEat(b, a))
+            return;
+
         Vec2 offset = b.body.position - a.body.position;
         Fix distance = Vec2.Magnitude(offset);
         Fix touching = a.playerPhysics.radius + b.playerPhysics.radius;
@@ -116,7 +138,7 @@ internal sealed class PlayerBouncer : MonoUpdatable
 
         Vec2 normal = offset / distance;
         Fix approach = Vec2.Dot(Velocity(b) - Velocity(a), normal);
-        Fix power = PlayerBouncingRule.BouncePower;
+        Fix power = PlayerBouncingRule.PlayerBouncePower;
         Fix separation = Fix.Max(-approach * power, PlayerBouncingRule.MinBounceSpeed * power);
         if (approach >= separation)
             return; // already moving apart fast enough
@@ -190,11 +212,32 @@ internal static class BounceJumpPatch
 /// <summary>
 /// "Bounce on everything": where a slime would stick to a platform, it bounces off it instead
 /// (velocity reflected on the surface normal, × BouncePower), and gets a jump (<see cref="BounceJumpPatch"/>).
+/// Exception: while the button of a ready ability that can only be used on the ground (Spike, Tesla coil...) is held,
+/// the slime sticks as usual, so the ability goes off (<see cref="WantsToStick"/>).
 /// </summary>
 [HarmonyPatch(typeof(PlayerPhysics), nameof(PlayerPhysics.CollideWithGround))]
 internal static class BounceOnEverythingRule
 {
     private static readonly Fix SurfaceGap = (Fix)0.05f;
+
+    /// <summary>Holding the button of a ready ability that needs the ground: let the slime stick to cast it.</summary>
+    internal static bool WantsToStick(SlimeController slime)
+    {
+        if (slime.suppressInput || slime.abilities == null)
+            return false;
+        Player player = PlayerHandler.Get().GetPlayer(slime.playerNumber);
+        if (player == null || !player.CanUseAbilities)
+            return false;
+        int count = System.Math.Min(slime.abilities.Count, slime.abilityCooldownTimers.Length);
+        for (int i = 0; i < count; i++)
+        {
+            AbilityMonoBehaviour ability = slime.abilities[i];
+            if (ability != null && ability.OnlyCastableOnGround && player.AbilityButtonIsDown(i) && slime.isAbilityReady(i) &&
+                ability.IsCastable(player))
+                return true;
+        }
+        return false;
+    }
 
     private static bool Prefix(PlayerPhysics __instance, ref RaycastInformation collision, Vec2 location)
     {
@@ -203,6 +246,8 @@ internal static class BounceOnEverythingRule
         SlimeController slime = __instance.GetComponent<SlimeController>();
         if (slime == null)
             return true; // ability forms keep their own behaviour
+        if (WantsToStick(slime))
+            return true;
 
         StickyRoundedRectangle wall = collision.pp.fixTrans != null ? collision.pp.fixTrans.GetComponent<StickyRoundedRectangle>() : null;
         if (wall == null || wall.IsDestroyed)
@@ -235,5 +280,74 @@ internal static class BounceOnEverythingRule
     {
         Fix into = Vec2.Dot(velocity, normal);
         return into < Fix.Zero ? velocity - normal * (restitution * into) : velocity;
+    }
+}
+
+/// <summary>
+/// "Bounce on everything": a slime can still end up stuck to a platform without landing on it: leaving an ability
+/// form that was on the ground (Roll, Meteor, Spike...), a ragdoll (gun hits) landing, a respawn, or sticking on
+/// purpose to cast a ground ability. Before its update reads the inputs, such a slime hops off the platform (keeping
+/// its speed along it) and gets its bounce jump, so the mode never stops and jumping keeps working. Not while it
+/// still wants to stick (<see cref="BounceOnEverythingRule.WantsToStick"/>), during its spawn animation, a ragdoll or
+/// a bite.
+/// </summary>
+[HarmonyPatch(typeof(SlimeController), nameof(SlimeController.OldUpdate))]
+internal static class BounceOffGroundPatch
+{
+    /// <summary>Speed of the hop off the platform, away from it.</summary>
+    internal static readonly Fix HopSpeed = (Fix)8L;
+
+    private static void Prefix(SlimeController __instance)
+    {
+        if (!BasicRules.BounceOnEverything.IsOn)
+            return;
+        PlayerPhysics physics = __instance.playerPhysics;
+        if (physics == null || !physics.IsGrounded() || !__instance.hasSpawned || __instance.body == null)
+            return;
+        if (__instance.currentState is SlimeController.State.ragdoll or SlimeController.State.biting or SlimeController.State.nothing)
+            return;
+        if (BounceOnEverythingRule.WantsToStick(__instance))
+            return;
+        StickyRoundedRectangle ground = physics.getAttachedGround();
+        if (ground == null || ground.IsDestroyed)
+            return;
+
+        PlayerBody body = __instance.body;
+        Vec2 normal = Vec2.NormalizedSafe(ground.currentNormal(body));
+        var tangent = new Vec2(normal.y, -normal.x);
+        Vec2 velocity = tangent * physics.groundedSpeed + normal * HopSpeed;
+        physics.UnGround(nullRotation: true, playSoundEffect: false);
+        body.selfImposedVelocity = velocity;
+        body.externalVelocity = Vec2.zero;
+        BounceJumpPatch.GiveJump(__instance);
+    }
+}
+
+/// <summary>
+/// "Bounce on everything": vanilla only lets a slime bite (eat a smaller slime) while it stands on a platform, which
+/// never happens in this mode. In the air, the same check as <c>SlimeController.OnCollide</c> runs here without the
+/// grounded part; on a platform vanilla handles it.
+/// </summary>
+[HarmonyPatch(typeof(SlimeController), nameof(SlimeController.OnCollide))]
+internal static class BounceEatPatch
+{
+    // By ref only to read the struct without the analyzer's "modified copy" warning; nothing is changed.
+    private static void Prefix(SlimeController __instance, ref CollisionInformation collision)
+    {
+        if (!BasicRules.BounceOnEverything.IsOn || collision.layer != LayerMask.NameToLayer("Player"))
+            return;
+        if (__instance.currentState == SlimeController.State.biting || __instance.playerPhysics == null ||
+            __instance.playerPhysics.IsGrounded() || GameTime.IsTimeStoppedFor(__instance.playerNumber))
+            return;
+        FixTransform other = collision.colliderPP.fixTrans;
+        if (other == null || __instance.body.fixtrans.Scale - other.Scale < __instance.scaleDiffBeforeNomNom)
+            return;
+        PlayerCollision victim = other.GetComponent<PlayerCollision>();
+        if (victim == null)
+            return;
+        Player eater = PlayerHandler.Get().GetPlayer(__instance.playerNumber);
+        Player food = PlayerHandler.Get().GetPlayer(victim.GetPlayerId());
+        if (eater != null && food != null && eater.Team != food.Team)
+            __instance.Bite(victim);
     }
 }

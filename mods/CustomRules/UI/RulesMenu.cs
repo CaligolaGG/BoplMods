@@ -235,7 +235,12 @@ internal sealed partial class RulesMenu : MonoBehaviour
         GUILayout.Space(indent);
         GUILayout.Label(rule.Label, GUILayout.Width(200f - indent));
 
-        GUI.enabled = !_readOnly;
+        // Locked by a rule that is on (e.g. a game mode): its value is forced, it can't be changed.
+        Rule lockedBy = RuleRegistry.LockedBy(rule, r => _texts[r], out string lockedValue);
+        if (lockedBy != null)
+            _texts[rule] = lockedValue;
+
+        GUI.enabled = !_readOnly && lockedBy == null;
         switch (rule.Type)
         {
             case RuleType.Bool:
@@ -243,8 +248,11 @@ internal sealed partial class RulesMenu : MonoBehaviour
                 bool on = GUILayout.Toggle(wasOn, "");
                 _texts[rule] = on ? bool.TrueString : bool.FalseString;
                 // Exclusive pair: turning this one on turns the other off.
-                if (on && !wasOn && rule.ExclusiveWith != null)
-                    _texts[rule.ExclusiveWith] = bool.FalseString;
+                if (on && !wasOn)
+                {
+                    foreach (Rule other in rule.ExclusiveWith)
+                        _texts[other] = bool.FalseString;
+                }
                 // Turning it on also sets the rules it goes with (e.g. a game mode's usual setup).
                 if (on && !wasOn)
                 {
@@ -261,10 +269,19 @@ internal sealed partial class RulesMenu : MonoBehaviour
         }
         GUI.enabled = true;
 
-        if (rule.Type != RuleType.Choice)
-            GUILayout.Label(rule.Type == RuleType.Bool
-                ? $"default {rule.DefaultText}"
-                : $"default {rule.DefaultText}  ({Rule.Format(rule.Min)}–{Rule.Format(rule.Max)})");
+        if (lockedBy != null)
+            GUILayout.Label($"locked by {lockedBy.Label}");
+        else if (rule.Type == RuleType.Bool)
+            GUILayout.Label($"default {rule.DefaultText}");
+        else if (rule.Type != RuleType.Choice)
+        {
+            // A rule that is on can raise the lowest value (e.g. a game mode).
+            float min = RuleRegistry.MinimumOf(rule, r => _texts[r], out Rule minBy);
+            string range = $"({Rule.Format(rule.NumberValue(min))}–{Rule.Format(rule.Max)})";
+            GUILayout.Label(minBy != null
+                ? $"default {rule.DefaultText}  {range} with {minBy.Label}"
+                : $"default {rule.DefaultText}  {range}");
+        }
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
@@ -341,6 +358,9 @@ internal sealed partial class RulesMenu : MonoBehaviour
                 _message = $"'{_texts[rule]}' is not a valid value for {rule.Label}.";
                 return false;
             }
+            float min = RuleRegistry.MinimumOf(rule, r => _texts[r], out Rule minBy);
+            if (minBy != null && System.Convert.ToSingle(value) < min)
+                value = rule.NumberValue(min);
             parsed[rule] = value;
         }
 

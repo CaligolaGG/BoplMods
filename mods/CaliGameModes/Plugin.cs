@@ -3,6 +3,7 @@ using BepInEx.Logging;
 using CaliGameModes.Maps;
 using CaliGameModes.Modes;
 using CaliGameModes.Modes.Football;
+using CaliGameModes.Modes.Rotation;
 using CustomRules.Core;
 using HarmonyLib;
 using UnityEngine;
@@ -29,6 +30,7 @@ public class Plugin : BaseUnityPlugin
         CustomMapsRule.Register();
         PinballMode.Register();
         FootballMode.Register();
+        RotationMode.Register();
 
         // Never unpatch in OnDestroy: Bopl Battle destroys the plugin GameObject before the main menu.
         var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);

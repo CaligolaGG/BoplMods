@@ -3,8 +3,8 @@
   <PropertyGroup>
     <AssemblyName>CaliGameModes</AssemblyName>
     <RootNamespace>CaliGameModes</RootNamespace>
-    <Version>1.1.0</Version>
-    <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. Pinball mode and Football mode.</Description>
+    <Version>1.1.1</Version>
+    <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. Pinball mode, Football mode and Rotation mode.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->
     <BepInExPluginGuid>com.caligola.caligamemodes</BepInExPluginGuid>

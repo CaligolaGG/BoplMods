@@ -66,6 +66,27 @@ internal static class AbilityMaxUseRule
         RuleRegistry.RulesActivated += UsedUp.Clear;
     }
 
+    /// <summary>
+    /// Whether the slime still has an ability it can use now or later: a slot that isn't lost (a used-up one being
+    /// rerolled counts). For game modes (Rotation).
+    /// </summary>
+    internal static bool HasAbilitiesLeft(SlimeController slime)
+    {
+        if (slime == null || slime.IsDestroyed || slime.abilities == null)
+            return false;
+        Slots slots = StateOf(slime);
+        for (int i = 0; i < slime.abilities.Count; i++)
+        {
+            AbilityMonoBehaviour ability = slime.abilities[i];
+            if (!slots.Lost[i] && ability != null && !ability.IsDestroyed)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Every player gets their used-up abilities back (Destroy): for game modes that start fresh every round.</summary>
+    internal static void ForgetUsedUp() => UsedUp.Clear();
+
     private static Slots StateOf(SlimeController slime)
     {
         Slots slots = State.GetOrCreateValue(slime);

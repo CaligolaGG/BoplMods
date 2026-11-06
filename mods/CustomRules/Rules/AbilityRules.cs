@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CustomRules.Core;
@@ -108,14 +109,24 @@ internal static class AbilityRules
 
     /// <summary>In the match: the active (host's) values.</summary>
     private static bool Allowed(NamedSprite entry) =>
-        Allowed(entry, NoOffensive.ActiveBool, OnlyOffensive.ActiveBool, ParseNames(Disabled.ActiveText));
+        Allowed(entry, NoOffensive.ActiveBool, OnlyOffensive.ActiveBool, ActiveDisabled);
 
-    private static bool FilterActive => NoOffensive.ActiveBool || OnlyOffensive.ActiveBool || ParseNames(Disabled.ActiveText).Count > 0;
+    private static bool FilterActive => NoOffensive.ActiveBool || OnlyOffensive.ActiveBool || ActiveDisabled.Count > 0;
+
+    /// <summary>Disabled abilities in the match: the list plus those banned by rules that are on (e.g. a game mode).</summary>
+    private static HashSet<string> ActiveDisabled => ParseNames(WithBans(Disabled.ActiveText, r => r.ActiveText));
+
+    /// <summary>A disabled list ("a|b") with the abilities banned by the rules on by <paramref name="text"/> added.</summary>
+    private static string WithBans(string disabled, Func<Rule, string> text)
+    {
+        string banned = string.Join("|", RuleRegistry.BannedAbilities(text));
+        return banned.Length == 0 ? disabled : string.IsNullOrEmpty(disabled) ? banned : disabled + "|" + banned;
+    }
 
     // In character select: the rules as set in the lobby (the host's for online guests), not yet active.
     internal static bool LobbyNoOffensive => RulesSync.LobbyBool(NoOffensive);
     internal static bool LobbyOnlyOffensive => RulesSync.LobbyBool(OnlyOffensive);
-    internal static HashSet<string> LobbyDisabled => ParseNames(RulesSync.LobbyText(Disabled));
+    internal static HashSet<string> LobbyDisabled => ParseNames(WithBans(RulesSync.LobbyText(Disabled), RulesSync.LobbyText));
     internal static bool LobbyFilterActive => LobbyNoOffensive || LobbyOnlyOffensive || LobbyDisabled.Count > 0;
 
     private static string _parsedText;

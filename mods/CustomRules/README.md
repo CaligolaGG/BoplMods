@@ -34,8 +34,9 @@ Profiles are files in `BepInEx/config/CustomRules.Profiles/`, so you can share t
 | Infinite round duration | on/off (no sudden death: platforms never fall) | off |
 | ↳ Sudden death time (s) | 1–3600: seconds before sudden death starts (shown even while Infinite round duration is off, which is when it's used) | 120 |
 | Player bouncing mode | on/off: slimes bounce off each other instead of passing through | off |
-| ↳ Bounce on everything | on/off: slimes bounce off platforms instead of sticking; each bounce gives back one jump (press jump in the air) | off |
-| ↳ Bounce power × | 0–5 | 1 |
+| ↳ Bounce on everything | on/off: slimes bounce off platforms instead of sticking; each bounce gives back one jump (press jump in the air). Hold the button of an ability that needs the ground (Spike, Tesla coil...) to stick to the next platform you touch and use it. Big slimes can eat small ones in the air | off |
+| ↳ Bounce power × | 0–10: how bouncy platforms are (bounce on everything) | 1 |
+| ↳ Player bounce × | 0–10: how hard slimes bounce off each other | 2 |
 | No offensive abilities | on/off: offensive abilities are greyed out and can't be picked (a ready player holding one is sent back to pick again, and the match can't start); Random (and pickups) only give non-offensive ones | off |
 | Only offensive abilities | on/off: the opposite (can't be on together with No offensive) | off |
 | Abilities max use | on/off: each ability slot can only be used a limited number of times per round (holding the button counts as one use); the Black hole's usual once-per-round limit is lifted | off |

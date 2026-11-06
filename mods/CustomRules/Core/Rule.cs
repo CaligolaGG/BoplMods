@@ -74,8 +74,8 @@ public sealed class Rule
     /// <summary>Choice rules: how the "" value (no choice) is shown.</summary>
     internal string NoneLabel { get; set; }
 
-    /// <summary>A bool rule that is turned off when this one is turned on in the menu (and the other way round).</summary>
-    internal Rule ExclusiveWith { get; set; }
+    /// <summary>Bool rules that are turned off when this one is turned on in the menu (and the other way round).</summary>
+    internal List<Rule> ExclusiveWith { get; } = new();
 
     /// <summary>
     /// Not drawn as a row of the Rules tab (edited elsewhere, e.g. the abilities window), but saved, synced and kept in
@@ -88,6 +88,20 @@ public sealed class Rule
 
     /// <summary>Bool rules: other rules' values set in the menu when this one is turned on (<see cref="RuleRegistry.AddPreset"/>).</summary>
     internal Dictionary<Rule, string> Presets { get; } = new();
+
+    /// <summary>
+    /// Bool rules: other rules forced to a value while this one is on (<see cref="RuleRegistry.AddLock"/>): greyed out
+    /// in the menu and overridden when the rules become active.
+    /// </summary>
+    internal Dictionary<Rule, string> Locks { get; } = new();
+
+    /// <summary>
+    /// Bool rules: lowest values of other (number) rules while this one is on (<see cref="RuleRegistry.AddMinimum"/>).
+    /// </summary>
+    internal Dictionary<Rule, float> Minimums { get; } = new();
+
+    /// <summary>Bool rules: abilities nobody can pick or get while this one is on (<see cref="RuleRegistry.AddBannedAbility"/>).</summary>
+    internal List<string> BannedAbilities { get; } = new();
 
     public string ActiveText { get; private set; }
 
@@ -159,6 +173,9 @@ public sealed class Rule
         }
         return value != null;
     }
+
+    /// <summary>A number as this (number) rule's value type: rounded up for Int rules.</summary>
+    internal object NumberValue(float value) => Type == RuleType.Int ? (int)Math.Ceiling(value) : value;
 
     internal static string Format(object value) => value switch
     {

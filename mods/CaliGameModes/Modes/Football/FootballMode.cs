@@ -9,7 +9,7 @@ namespace CaliGameModes.Modes.Football;
 /// <summary>
 /// Football mode: two teams (left and right spawns), footballs spawned by the mode (the Pinball's ball with its own
 /// stats, <see cref="FootballSettings"/>), goals under the map's goal platforms (<see cref="FootballMaps"/>), nobody
-/// dies. The match itself: <see cref="FootballMatch"/>. Maps: only football maps are played while the mode is on
+/// dies (<see cref="Respawning"/>). The match itself: <see cref="FootballMatch"/>. Maps: only football maps are played while the mode is on
 /// (<see cref="MapLoaderBridge"/>, needs the Map Loader mod).
 /// </summary>
 internal static class FootballMode
@@ -73,43 +73,6 @@ internal static class FootballMode
         {
             if (!GameLobby.isOnlineGame || SteamManager.LocalPlayerIsLobbyOwner)
                 MapLoaderBridge.ShowMapsFor(Enabled.LobbyBool);
-        }
-    }
-
-    /// <summary>
-    /// Nobody dies: a slime that would die comes back in the middle of the map instead, through the game's own
-    /// "permanent revive" (as in the tutorial: revive animation at <see cref="Player.SpawnPosition"/>).
-    /// </summary>
-    [HarmonyPatch(typeof(PlayerCollision), nameof(PlayerCollision.killPlayer))]
-    private static class NoDeaths
-    {
-        private static void Prefix(PlayerCollision __instance)
-        {
-            FootballMatch match = FootballMatch.Current;
-            if (match == null)
-                return;
-            Player player = PlayerHandler.Get().GetPlayer(__instance.GetPlayerId());
-            if (player == null || player.RespawnPositions.Count > 0 || player.ExtraLife != ReviveStatus.NoRevive)
-                return;
-            player.ExtraLife = ReviveStatus.permanentRevive;
-            player.SpawnPosition = match.PlayerRespawn;
-        }
-    }
-
-    /// <summary>Water kills directly (and destroys the slime): send slimes through the revive above instead.</summary>
-    [HarmonyPatch(typeof(KillZone), nameof(KillZone.OnCollide))]
-    private static class NoDrowning
-    {
-        private static bool Prefix(KillZone __instance, CollisionInformation collision)
-        {
-            if (FootballMatch.Current == null || collision.layer != LayerMask.NameToLayer("Player"))
-                return true;
-            PlayerCollision body = collision.pp.fixTrans != null ? collision.pp.fixTrans.GetComponent<PlayerCollision>() : null;
-            if (body == null)
-                return true;
-            __instance.SpawnWaterSplash((Vector2)collision.collider.Pos());
-            body.killPlayer(Constants.ENVIRONMENTAL_PLAYER_ID, spawnEffect: false, ignoreInvulnerability: true, CauseOfDeath.Accident);
-            return false;
         }
     }
 }

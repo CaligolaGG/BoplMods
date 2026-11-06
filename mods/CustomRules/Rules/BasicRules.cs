@@ -18,6 +18,7 @@ internal static class BasicRules
     internal static Rule PlayerBouncing;
     internal static Rule BounceOnEverything;
     internal static Rule BouncePower;
+    internal static Rule PlayerBouncePower;
     internal static Rule ExtraJump;
     internal static Rule AirJumps;
 
@@ -51,7 +52,9 @@ internal static class BasicRules
             "Slimes don't stick to platforms anymore: they bounce off them too. Touching a platform gives back your jump (press jump in the air).",
             parent: PlayerBouncing);
         BouncePower = RuleRegistry.AddFloat("PlayerBouncing.BouncePower", "Bounce power ×", 1f, 0f, 10f,
-            "Multiplies how bouncy the slimes are (1 = keeps its speed off platforms).", parent: PlayerBouncing);
+            "How bouncy platforms are with Bounce on everything (1 = a slime keeps its speed off platforms).", parent: PlayerBouncing);
+        PlayerBouncePower = RuleRegistry.AddFloat("PlayerBouncing.PlayerPower", "Player bounce ×", 2f, 0f, 10f,
+            "How hard slimes bounce off each other (1 = the old strength).", parent: PlayerBouncing);
         ExtraJump = RuleRegistry.AddBool("ExtraJump", "Extra Jump", false,
             "Players can jump again in mid-air.");
         AirJumps = RuleRegistry.AddInt("ExtraJump.AirJumps", "Air jumps", 2, 1, 10,

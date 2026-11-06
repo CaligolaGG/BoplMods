@@ -7,14 +7,14 @@ schemaVersion = "0.0.1"
 namespace = "caligola"
 name = "CaliGameModes"
 versionNumber = "1.0.0"
-description = "Game modes set by the lobby host in the CustomRules menu. Pinball mode (pinballs shot into the arena) and Football mode (needs Map Loader). Every player in the lobby needs it."
+description = "Game modes set by the lobby host in the CustomRules menu. Pinball mode (pinballs shot into the arena), Football mode (needs Map Loader) and Rotation mode (use every ability, most kills wins). Every player in the lobby needs it."
 websiteUrl = ""
 containsNsfwContent = false
 
 [package.dependencies]
 BepInEx-BepInExPack = "5.4.2305"
-caligola-CustomRules = "1.0.1"
-caligola-CaliSkills = "1.5.1"
+caligola-CustomRules = "1.0.2"
+caligola-CaliSkills = "1.5.2"
 
 [build]
 icon = "./icon.png"

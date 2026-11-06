@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.0.2
+- For game mode mods: rules can be locked by another rule (greyed out in the menu, "locked by ..." shown, and forced when the match starts), a rule can raise another rule's lowest value while it's on, a rule can ban abilities while it's on, and a rule can be exclusive with several others.
+- Player bouncing: new "Player bounce ×" setting for how hard slimes bounce off each other (default 2, stronger than before); "Bounce power ×" is now only for platforms. A slime big enough to eat another isn't bounced away from it anymore, so eating works again.
+- Bounce on everything fixes: abilities that need the ground (Spike, Tesla coil...) work again: hold their button and you stick to the next platform you touch to use them. After Roll, Meteor, a ragdoll (gun hits) or anything else that left you stuck to a platform, you bounce off it again instead of staying stuck, and jumping works. Big slimes can eat small ones in the air.
 - Abilities window: new "Show hitboxes" checkbox. Ability mods that support it (CaliSkills) draw their hidden hitboxes in red during matches, for testing. Saved and synced like every rule.
 
 ## 1.0.1

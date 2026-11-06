@@ -34,6 +34,8 @@ internal static class RulesSync
     /// </summary>
     internal static string LobbyText(Rule rule)
     {
+        if (RuleRegistry.LockedBy(rule, LobbyText, out string locked) != null)
+            return locked;
         if (!IsOnlineClient)
             return rule.LocalText;
         return _hostValues != null && _hostValues.TryGetValue(rule.Key, out string text) && rule.TryParse(text, out object value)
@@ -60,6 +62,7 @@ internal static class RulesSync
     {
         foreach (Rule rule in RuleRegistry.Rules)
             rule.SetActive(values.TryGetValue(rule.Key, out string text) ? text : rule.DefaultText);
+        RuleRegistry.ApplyLocks();
 
         foreach (SyncedValue synced in RuleRegistry.SyncedValues)
         {

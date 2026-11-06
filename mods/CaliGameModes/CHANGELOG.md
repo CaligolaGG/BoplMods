@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+- Rotation mode: every ability you use up is gone for you and replaced by a new one, until you've used them all. Nobody dies: a kill gives the killer a point and the slime comes back at the spawn point farthest from the others. Dying to the water, the edge of the map or your own attack within 5 s of being knocked by someone gives them the point; a suicide with nobody to blame gives a point to every player of the other teams. The round ends only when every player has used every ability; the highest score wins (in teams, the team's total). Scores at the top of the screen. While it's on, Abilities max use, Destroy ability on max use, Reroll on max use and Infinite round duration are locked on, Max use amount can't be 0, and Revival is banned. Can't be on with Football mode.
+- Needs CustomRules 1.0.2.
+
 ## 1.1.0
 - Football mode: left team against right team, score in the other team's goal (drawn on the map with posts, crossbar and net), score at the top of the screen, nobody dies. Sub rules: First to, Time, Number of balls, Edit football (the ball's own stats). Turning it on sets Extra jump (1 air jump), Infinite round duration, Player bouncing mode and No offensive abilities. Played on football maps with the Map Loader mod; first map: Football Field (shipped with the mod).
 - Pinball mode and Football mode can't both be on.

@@ -67,13 +67,111 @@ public static class RuleRegistry
         return rule;
     }
 
-    /// <summary>Two bool rules that can't both be on: turning one on in the menu turns the other off.</summary>
+    /// <summary>
+    /// Two bool rules that can't both be on: turning one on in the menu turns the other off. A rule can be exclusive
+    /// with several others.
+    /// </summary>
     public static void MakeExclusive(Rule a, Rule b)
     {
         if (a.Type != RuleType.Bool || b.Type != RuleType.Bool)
             throw new ArgumentException("Only bool rules can be exclusive.");
-        a.ExclusiveWith = b;
-        b.ExclusiveWith = a;
+        if (!a.ExclusiveWith.Contains(b))
+            a.ExclusiveWith.Add(b);
+        if (!b.ExclusiveWith.Contains(a))
+            b.ExclusiveWith.Add(a);
+    }
+
+    /// <summary>
+    /// While <paramref name="rule"/> (a bool rule) is on, the rule <paramref name="key"/> is forced to
+    /// <paramref name="value"/>: set when it's turned on in the menu, shown greyed out there (can't be changed), and
+    /// enforced when the rules become active. E.g. rules a game mode can't work without.
+    /// </summary>
+    public static void AddLock(Rule rule, string key, object value)
+    {
+        AddPreset(rule, key, value);
+        Rule target = Find(key);
+        rule.Locks[target] = rule.Presets[target];
+    }
+
+    /// <summary>
+    /// While <paramref name="rule"/> (a bool rule) is on, the number rule <paramref name="key"/> can't go below
+    /// <paramref name="min"/>: the menu raises lower values on Apply (and shows the new range), and they're raised
+    /// when the rules become active. E.g. a game mode that can't work with 0.
+    /// </summary>
+    public static void AddMinimum(Rule rule, string key, float min)
+    {
+        if (rule.Type != RuleType.Bool)
+            throw new ArgumentException("Only bool rules can set minimums.");
+        Rule target = Find(key) ?? throw new ArgumentException($"No rule '{key}'.");
+        if (target.Type != RuleType.Float && target.Type != RuleType.Int)
+            throw new ArgumentException($"Rule '{key}' isn't a number.");
+        rule.Minimums[target] = min;
+    }
+
+    /// <summary>
+    /// The lowest value the rules that are on (by <paramref name="text"/>) allow for <paramref name="target"/>, and
+    /// the rule asking for it (null if none: the rule's own Min).
+    /// </summary>
+    internal static float MinimumOf(Rule target, Func<Rule, string> text, out Rule by)
+    {
+        float min = target.Min;
+        by = null;
+        foreach (Rule rule in RuleList)
+        {
+            if (rule.Minimums.TryGetValue(target, out float value) && value > min && IsOnBy(rule, text))
+            {
+                min = value;
+                by = rule;
+            }
+        }
+        return min;
+    }
+
+    /// <summary>
+    /// While <paramref name="rule"/> (a bool rule) is on, the ability <paramref name="abilityName"/> (its name in the
+    /// game's ability list) is disabled as if it were in the disabled abilities: nobody can pick it or get it.
+    /// </summary>
+    public static void AddBannedAbility(Rule rule, string abilityName)
+    {
+        if (rule.Type != RuleType.Bool)
+            throw new ArgumentException("Only bool rules can ban abilities.");
+        if (!rule.BannedAbilities.Contains(abilityName))
+            rule.BannedAbilities.Add(abilityName);
+    }
+
+    /// <summary>A bool rule on by <paramref name="text"/> (one of its values), with every parent on too.</summary>
+    internal static bool IsOnBy(Rule rule, Func<Rule, string> text) =>
+        text(rule) == bool.TrueString && (rule.Parent == null || IsOnBy(rule.Parent, text));
+
+    /// <summary>The rule that locks <paramref name="target"/> (on by <paramref name="text"/>), or null.</summary>
+    internal static Rule LockedBy(Rule target, Func<Rule, string> text, out string value)
+    {
+        foreach (Rule rule in RuleList)
+        {
+            if (rule.Locks.TryGetValue(target, out value) && IsOnBy(rule, text))
+                return rule;
+        }
+        value = null;
+        return null;
+    }
+
+    /// <summary>Abilities banned by the rules that are on (by <paramref name="text"/>).</summary>
+    internal static IEnumerable<string> BannedAbilities(Func<Rule, string> text) =>
+        RuleList.Where(r => r.BannedAbilities.Count > 0 && IsOnBy(r, text)).SelectMany(r => r.BannedAbilities);
+
+    /// <summary>After the active values are set: locked rules get their locked value.</summary>
+    internal static void ApplyLocks()
+    {
+        foreach (Rule rule in RuleList.Where(r => r.Locks.Count > 0 && r.IsOn).ToList())
+        {
+            foreach (KeyValuePair<Rule, string> locked in rule.Locks)
+                locked.Key.SetActive(locked.Value);
+            foreach (KeyValuePair<Rule, float> minimum in rule.Minimums)
+            {
+                if (minimum.Key.ActiveFloat < minimum.Value)
+                    minimum.Key.SetActive(Rule.Format(minimum.Key.NumberValue(minimum.Value)));
+            }
+        }
     }
 
     /// <summary>
