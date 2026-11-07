@@ -29,7 +29,15 @@ public class OmaeMarks : MonoUpdatable
     private readonly Dictionary<SpriteRenderer, SpriteRenderer> _overlays = new();
     private readonly Dictionary<int, bool> _isRedPlayer = new();
     private readonly Dictionary<int, float> _flashPhases = new();
-    private PlayerCollision[] _bodies = new PlayerCollision[0];
+    private static readonly PlayerCollision[] NoBodies = new PlayerCollision[0];
+    private PlayerCollision[] _bodies = NoBodies;
+
+    // Reused every frame / tick instead of allocated.
+    private readonly List<int> _ended = new();
+    private readonly Dictionary<int, float> _pulses = new();
+    private readonly HashSet<SpriteRenderer> _shown = new();
+    private readonly List<SpriteRenderer> _overlayKeys = new();
+    private bool _overlaysOff = true;
     private float _nextBodySearch;
     private Material _flashMaterial;
     private static bool _loggedMaterial;
@@ -62,7 +70,8 @@ public class OmaeMarks : MonoUpdatable
         if (_marks.Count == 0)
             return;
 
-        var ended = new List<int>();
+        List<int> ended = _ended;
+        ended.Clear();
         foreach (KeyValuePair<int, MarkState> pair in _marks)
         {
             Player player = PlayerHandler.Get().GetPlayer(pair.Key);
@@ -101,14 +110,26 @@ public class OmaeMarks : MonoUpdatable
 
     private void LateUpdate()
     {
+        // Nobody marked (most of the level once a mark is gone): hide the overlays once, then nothing to do.
+        if (_marks.Count == 0)
+        {
+            if (!_overlaysOff)
+                HideOverlays(null);
+            _bodies = NoBodies;
+            _nextBodySearch = 0f;
+            return;
+        }
+        _overlaysOff = false;
+
         if (Time.unscaledTime >= _nextBodySearch)
         {
-            _bodies = _marks.Count > 0 ? FindObjectsOfType<PlayerCollision>() : new PlayerCollision[0];
+            _bodies = FindObjectsOfType<PlayerCollision>();
             _nextBodySearch = Time.unscaledTime + 0.25f;
         }
 
         // Per player flash phase and strength; the closer the mark is to 0, the faster and stronger the flashing.
-        var pulses = new Dictionary<int, float>();
+        Dictionary<int, float> pulses = _pulses;
+        pulses.Clear();
         foreach (KeyValuePair<int, MarkState> pair in _marks)
         {
             float duration = Mathf.Max(0.01f, OmaeSettings.MarkDuration);
@@ -121,7 +142,8 @@ public class OmaeMarks : MonoUpdatable
             pulses[pair.Key] = strength * (0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f));
         }
 
-        var shown = new HashSet<SpriteRenderer>();
+        HashSet<SpriteRenderer> shown = _shown;
+        shown.Clear();
         foreach (PlayerCollision body in _bodies)
         {
             if (body == null || !body.gameObject.activeInHierarchy || !pulses.TryGetValue(body.GetPlayerId(), out float pulse))
@@ -144,13 +166,23 @@ public class OmaeMarks : MonoUpdatable
             shown.Add(target);
         }
 
-        foreach (KeyValuePair<SpriteRenderer, SpriteRenderer> pair in _overlays.ToList())
+        HideOverlays(shown);
+    }
+
+    /// <summary>Hides every overlay whose body isn't in <paramref name="shown"/> (all with null); drops dead ones.</summary>
+    private void HideOverlays(HashSet<SpriteRenderer> shown)
+    {
+        _overlayKeys.Clear();
+        _overlayKeys.AddRange(_overlays.Keys);
+        foreach (SpriteRenderer key in _overlayKeys)
         {
-            if (pair.Key == null || pair.Value == null)
-                _overlays.Remove(pair.Key);
-            else if (!shown.Contains(pair.Key))
-                pair.Value.enabled = false;
+            SpriteRenderer overlay = _overlays[key];
+            if (key == null || overlay == null)
+                _overlays.Remove(key);
+            else if (shown == null || !shown.Contains(key))
+                overlay.enabled = false;
         }
+        _overlaysOff = shown == null;
     }
 
     /// <summary>

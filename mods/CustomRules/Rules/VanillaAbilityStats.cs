@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BoplFixedMath;
 using CustomRules.Core;
 using HarmonyLib;
@@ -63,9 +64,20 @@ internal static class VanillaAbilityStats
         public string Name;
         public List<StatDef> Stats;
 
-        public Rule RuleOf(string key) => Stats.FirstOrDefault(s => s.Key == key)?.Rule;
+        public bool HasSpawnStats;
 
-        public bool HasSpawnStats => Stats.Any(s => s.OnSpawn != null);
+        // Derived from the active values (Refresh).
+        public Fix CooldownMultiplier = Fix.One;
+
+        public Rule RuleOf(string key)
+        {
+            foreach (StatDef stat in Stats)
+            {
+                if (stat.Key == key)
+                    return stat.Rule;
+            }
+            return null;
+        }
     }
 
     /// <summary>On every vanilla ability object created in a match: which ability it is.</summary>
@@ -284,16 +296,53 @@ internal static class VanillaAbilityStats
                 def.Stats.Select(s => (s.Key, Labels[s.Key], s.Description)));
             for (int i = 0; i < def.Stats.Count; i++)
                 def.Stats[i].Rule = set.Stats[i].Rule;
+            def.HasSpawnStats = def.Stats.Any(s => s.OnSpawn != null);
         }
     }
 
     private static Fix Multiplier(AbilityDef def, string key) => def.RuleOf(key)?.ActiveFix ?? Fix.One;
 
+    // What the hot patches need, derived from the active values once per change (Rule.ActiveVersion), not per call.
+    private static int _refreshedVersion = -1;
+    private static bool _anyCooldown, _anySpawn;
+    private static Fix _invisibilityDuration = Fix.One, _beamSize = Fix.One;
+
+    private static void Refresh()
+    {
+        if (_refreshedVersion == Rule.ActiveVersion)
+            return;
+        _refreshedVersion = Rule.ActiveVersion;
+        _anyCooldown = _anySpawn = false;
+        foreach (AbilityDef def in Defs)
+        {
+            def.CooldownMultiplier = Multiplier(def, Cooldown);
+            _anyCooldown |= def.CooldownMultiplier != Fix.One;
+            foreach (StatDef stat in def.Stats)
+            {
+                if (stat.OnSpawn != null && stat.Rule != null && stat.Rule.ActiveFix != Fix.One)
+                    _anySpawn = true;
+            }
+        }
+        _invisibilityDuration = ByName.TryGetValue("Invisibility", out AbilityDef invisibility) ? Multiplier(invisibility, Duration) : Fix.One;
+        _beamSize = ByName.TryGetValue("Beam", out AbilityDef beam) ? Multiplier(beam, Size) : Fix.One;
+    }
+
+    /// <summary>Ability objects (and their components) → their ability, filled when they're created.</summary>
+    private static readonly ConditionalWeakTable<Component, AbilityDef> Known = new();
+
     private static AbilityDef DefOf(Component c)
     {
-        // includeInactive: ability objects are inactive while not in use, and their cooldown is still asked for.
-        Tag tag = c != null ? c.GetComponentInParent<Tag>(true) : null;
-        return tag != null && tag.Ability != null && ByName.TryGetValue(tag.Ability, out AbilityDef def) ? def : null;
+        if (c == null)
+            return null;
+        if (Known.TryGetValue(c, out AbilityDef known))
+            return known;
+        // Not seen created (e.g. a copy of a live ability object). includeInactive: ability objects are inactive while
+        // not in use, and their cooldown is still asked for.
+        Tag tag = c.GetComponentInParent<Tag>(true);
+        if (tag == null || tag.Ability == null || !ByName.TryGetValue(tag.Ability, out AbilityDef def))
+            return null;
+        Known.Add(c, def);
+        return def;
     }
 
     // --- Ability objects ---
@@ -335,6 +384,11 @@ internal static class VanillaAbilityStats
             if (name == null || __result == null || !ByName.TryGetValue(name, out AbilityDef def))
                 return;
             __result.AddComponent<Tag>().Ability = name;
+            foreach (MonoBehaviour component in __result.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                Known.Remove(component);
+                Known.Add(component, def);
+            }
             foreach (StatDef stat in def.Stats)
             {
                 Fix m = stat.Rule.ActiveFix;
@@ -357,10 +411,13 @@ internal static class VanillaAbilityStats
 
         private static void Postfix(AbilityMonoBehaviour __instance, ref Fix __result)
         {
+            // Called several times per slot per slime every tick: nothing to do unless a cooldown was changed.
+            Refresh();
             // Invisibility parks its cooldown at 10000 while you're invisible: leave that alone.
-            if (__result >= (Fix)1000L || DefOf(__instance) is not AbilityDef def)
+            if (!_anyCooldown || __result >= (Fix)1000L || DefOf(__instance) is not AbilityDef def ||
+                def.CooldownMultiplier == Fix.One)
                 return;
-            __result *= Multiplier(def, Cooldown);
+            __result *= def.CooldownMultiplier;
         }
     }
 
@@ -373,6 +430,8 @@ internal static class VanillaAbilityStats
     }
 
     private static readonly Stack<Scope> Scopes = new();
+    private static readonly Stack<Scope> FreeScopes = new();
+    private static readonly HashSet<GameObject> Roots = new();
     private static bool _scopesPatched;
 
     /// <summary>
@@ -423,10 +482,18 @@ internal static class VanillaAbilityStats
 
     private static void ScopePrefix(MonoBehaviour __instance, out bool __state)
     {
+        __state = false;
+        // Runs for every ability in use, every tick: with no spawn stat changed, no scope can scale anything.
+        Refresh();
+        if (!_anySpawn)
+            return;
         AbilityDef def = DefOf(__instance);
         __state = def != null && def.HasSpawnStats;
-        if (__state)
-            Scopes.Push(new Scope { Def = def });
+        if (!__state)
+            return;
+        Scope scope = FreeScopes.Count > 0 ? FreeScopes.Pop() : new Scope();
+        scope.Def = def;
+        Scopes.Push(scope);
     }
 
     private static Exception ScopeFinalizer(Exception __exception, bool __state)
@@ -442,6 +509,9 @@ internal static class VanillaAbilityStats
             {
                 Plugin.Log.LogError($"Ability stats: scaling what {scope.Def.Name} spawned failed: {e}");
             }
+            scope.Spawned.Clear();
+            scope.Def = null;
+            FreeScopes.Push(scope);
         }
         return __exception;
     }
@@ -450,7 +520,8 @@ internal static class VanillaAbilityStats
     {
         if (scope.Spawned.Count == 0)
             return;
-        var roots = new HashSet<GameObject>();
+        HashSet<GameObject> roots = Roots;
+        roots.Clear();
         foreach (MonoUpdatable updatable in scope.Spawned)
         {
             if (updatable == null)
@@ -469,6 +540,7 @@ internal static class VanillaAbilityStats
                     stat.OnSpawn(root, m);
             }
         }
+        roots.Clear();
     }
 
     /// <summary>What registers with the Updater while an ability's code runs was spawned by it.</summary>
@@ -493,9 +565,10 @@ internal static class VanillaAbilityStats
     {
         private static void Prefix(Player __instance, Fix deltaTime)
         {
-            if (!__instance.isInvisible || !ByName.TryGetValue("Invisibility", out AbilityDef def))
+            if (!__instance.isInvisible)
                 return;
-            Fix m = Multiplier(def, Duration);
+            Refresh();
+            Fix m = _invisibilityDuration;
             if (m == Fix.One)
                 return;
             Fix step = GameTime.FixedDeltaTime(__instance.Id, deltaTime);
@@ -509,8 +582,9 @@ internal static class VanillaAbilityStats
     {
         private static void Prefix(ref DetPhysics.BeamBody body)
         {
-            if (ByName.TryGetValue("Beam", out AbilityDef def))
-                body.scale *= Multiplier(def, Size);
+            Refresh();
+            if (_beamSize != Fix.One)
+                body.scale *= _beamSize;
         }
     }
 }

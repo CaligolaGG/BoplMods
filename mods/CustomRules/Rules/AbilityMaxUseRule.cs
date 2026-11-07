@@ -14,7 +14,9 @@ namespace CustomRules.Rules;
 /// (<see cref="Reroll"/>), or lost (never castable, its icon hidden; an ability pickup fills it again). With <see cref="Destroy"/>, an ability a player used up never
 /// comes back to them in rerolls, for the rest of the game, and every other slot holding it (now or from a later
 /// pickup) is rerolled too, right away and never lost.
-/// The Black hole's own once-per-round limit is lifted while the rule is on.
+/// The Black hole's own once-per-round limit is lifted while the rule is on. A Grappling hook use is firing the hook:
+/// reeling in on the rope it fired doesn't count, still works once it's used up, and the slot isn't swapped while that
+/// rope is out (the player would be left hanging with nothing to pull it in).
 /// Sim code: counts and rerolls use synced inputs, sim state and the game's seeded RNG.
 /// </summary>
 internal static class AbilityMaxUseRule
@@ -105,16 +107,46 @@ internal static class AbilityMaxUseRule
             Slots slots = StateOf(__instance);
             if (Amount.ActiveInt > 0 && !slots.Lost[abilityIndex] && slots.Uses[abilityIndex] < Amount.ActiveInt)
                 return true;
+            // A used-up Grappling hook can still reel in the rope it fired.
+            if (Amount.ActiveInt > 0 && !slots.Lost[abilityIndex] && abilityIndex < __instance.abilities.Count &&
+                RopeOut(__instance, __instance.abilities[abilityIndex]))
+                return true;
             __result = false;
             return false;
         }
+    }
+
+    private static readonly ConditionalWeakTable<AbilityMonoBehaviour, StrongBox<HookshotInstant>> Hooks = [];
+
+    /// <summary>
+    /// The ability is a Grappling hook whose rope is still out and attached to the slime: pressing it reels in, and its
+    /// use isn't over yet. Same test as the hook's own reel-in (HookshotInstant.UseAbility).
+    /// </summary>
+    private static bool RopeOut(SlimeController slime, AbilityMonoBehaviour ability)
+    {
+        if (ability == null || ability.IsDestroyed || slime.body == null)
+            return false;
+        if (!Hooks.TryGetValue(ability, out StrongBox<HookshotInstant> box))
+            Hooks.Add(ability, box = new StrongBox<HookshotInstant>(ability.GetComponent<HookshotInstant>()));
+        HookshotInstant hook = box.Value;
+        if (hook == null)
+            return false;
+        RopeBody rope = hook.ropeBody;
+        RopeBody attached = slime.body.ropeBody;
+        return rope != null && attached != null && rope.enabled && attached.enabled && attached.number == hook.firedRopeNumber &&
+               rope.ownerId == slime.playerNumber;
     }
 
     /// <summary>A cast: counts once per press.</summary>
     [HarmonyPatch(typeof(SlimeController), nameof(SlimeController.EnterAbility))]
     private static class CountUses
     {
-        private static void Postfix(SlimeController __instance, int abilityIndex)
+        /// <param name="__state">A Grappling hook reeling in its rope (not a new use).</param>
+        private static void Prefix(SlimeController __instance, int abilityIndex, out bool __state) =>
+            __state = Enabled.IsOn && abilityIndex < __instance.abilities.Count &&
+                      RopeOut(__instance, __instance.abilities[abilityIndex]);
+
+        private static void Postfix(SlimeController __instance, int abilityIndex, bool __state)
         {
             if (!Enabled.IsOn || abilityIndex >= __instance.abilities.Count)
                 return;
@@ -125,7 +157,8 @@ internal static class AbilityMaxUseRule
             if (slots.Held[abilityIndex])
                 return;
             slots.Held[abilityIndex] = true;
-            slots.Uses[abilityIndex]++;
+            if (!__state)
+                slots.Uses[abilityIndex]++;
         }
     }
 
@@ -171,8 +204,10 @@ internal static class AbilityMaxUseRule
                 // Right after the last use, once it's over: out of its form, button released, and a moment after the
                 // cast (instant abilities such as a dash or a bat swing still run then; the Bat and Run keep their
                 // timer at 0 while they do). A copy that wasn't just used goes at once.
+                // A Grappling hook's use lasts while its rope is out (it sets its cooldown to 0 meanwhile).
                 if (__instance.isInAbility || slots.Held[i] ||
-                    __instance.abilityCooldownTimers[i] < Fix.Min(SwapDelay, ability.GetCooldown()))
+                    __instance.abilityCooldownTimers[i] < Fix.Min(SwapDelay, ability.GetCooldown()) ||
+                    RopeOut(__instance, ability))
                     continue;
                 if (usedUp)
                     UseUp(__instance, player, slots, i);

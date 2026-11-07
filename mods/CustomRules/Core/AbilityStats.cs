@@ -114,9 +114,26 @@ public static class AbilityStats
     /// <summary>Whether a stat of the ability differs from its default, as set in the lobby (the host's for guests).</summary>
     internal static bool IsModifiedInLobby(string abilityName)
     {
-        AbilityStatSet set = Find(abilityName);
-        return set != null && set.Stats.Any(s => RulesSync.LobbyText(s.Rule) != s.Rule.DefaultText);
+        // Asked for every ability icon every frame: cached per RulesSync.LobbyVersion.
+        int version = RulesSync.LobbyVersion;
+        if (version != _modifiedVersion)
+        {
+            _modifiedVersion = version;
+            ModifiedInLobby.Clear();
+        }
+        if (abilityName == null)
+            return false;
+        if (!ModifiedInLobby.TryGetValue(abilityName, out bool modified))
+        {
+            AbilityStatSet set = Find(abilityName);
+            modified = set != null && set.Stats.Any(s => RulesSync.LobbyText(s.Rule) != s.Rule.DefaultText);
+            ModifiedInLobby[abilityName] = modified;
+        }
+        return modified;
     }
+
+    private static int _modifiedVersion = -1;
+    private static readonly Dictionary<string, bool> ModifiedInLobby = new();
 
     /// <summary>Config keys can't hold some characters: keep letters and digits only.</summary>
     private static string Id(string name)

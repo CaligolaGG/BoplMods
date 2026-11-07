@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>CaliGameModes</AssemblyName>
     <RootNamespace>CaliGameModes</RootNamespace>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Description>Game modes for Bopl Battle, set by the lobby host from the CustomRules menu. Pinball mode, Football mode and Rotation mode.</Description>
 
     <!-- Used by BepInEx.PluginInfoProps to generate MyPluginInfo -->

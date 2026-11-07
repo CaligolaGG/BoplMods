@@ -41,6 +41,8 @@ internal static class RotationMode
         {
             if (Enabled.IsOn)
                 new GameObject("CaliGameModes.Rotation").AddComponent<RotationMatch>().Begin(__instance);
+            else
+                KnockTracker.Unpatch();
         }
     }
 }

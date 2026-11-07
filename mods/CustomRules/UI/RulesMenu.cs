@@ -51,6 +51,19 @@ internal sealed partial class RulesMenu : MonoBehaviour
         var go = new GameObject("CustomRules.Menu");
         DontDestroyOnLoad(go);
         _instance = go.AddComponent<RulesMenu>();
+        // Only alive in the lobby: a MonoBehaviour with OnGUI costs IMGUI passes every frame, matches included.
+        _instance.enabled = InLobbyScene;
+        SceneManager.activeSceneChanged += (_, _) => OnSceneChanged();
+    }
+
+    private static void OnSceneChanged()
+    {
+        if (_instance == null)
+            return;
+        bool lobby = InLobbyScene;
+        if (!lobby && _instance._open)
+            _instance.Close();
+        _instance.enabled = lobby;
     }
 
     private static bool InLobbyScene => Array.IndexOf(LobbyScenes, SceneManager.GetActiveScene().name) >= 0;

@@ -90,6 +90,7 @@ internal sealed class FanVisuals : MonoBehaviour
             Hide();
             return;
         }
+        _allHidden = false;
         if (_root == null)
             Build();
 
@@ -292,8 +293,14 @@ internal sealed class FanVisuals : MonoBehaviour
             _sound.Stop();
     }
 
+    /// <summary>Everything already hidden: Hide runs every idle frame, it has nothing left to do then.</summary>
+    private bool _allHidden;
+
     private void Hide()
     {
+        if (_allHidden)
+            return;
+        _allHidden = true;
         _shown = false;
         UpdateSound(blowing: false);
         if (_hidingSlime)

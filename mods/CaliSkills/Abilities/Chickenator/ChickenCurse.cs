@@ -109,9 +109,14 @@ internal sealed class ChickenCurse : MonoUpdatable
         }
     }
 
+    private readonly List<int> _ids = new();
+
+
     public override void UpdateSim(Fix simDeltaTime)
     {
-        var ids = new List<int>(_chickens.Keys);
+        List<int> ids = _ids; // reused: runs every tick
+        ids.Clear();
+        ids.AddRange(_chickens.Keys);
         foreach (int id in ids)
         {
             Chicken c = _chickens[id];

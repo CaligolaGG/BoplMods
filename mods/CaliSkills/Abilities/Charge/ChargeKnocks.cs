@@ -41,9 +41,14 @@ internal sealed class ChargeKnocks : MonoUpdatable
     {
     }
 
+    private readonly List<int> _ids = new();
+
+
     public override void UpdateSim(Fix simDeltaTime)
     {
-        var ids = new List<int>(_knocks.Keys);
+        List<int> ids = _ids; // reused: runs every tick
+        ids.Clear();
+        ids.AddRange(_knocks.Keys);
         foreach (int id in ids)
         {
             Knock k = _knocks[id];

@@ -58,9 +58,14 @@ internal sealed class ChadStun : MonoUpdatable
     {
     }
 
+    private readonly List<int> _ids = new();
+
+
     public override void UpdateSim(Fix simDeltaTime)
     {
-        var ids = new List<int>(_stuns.Keys);
+        List<int> ids = _ids; // reused: runs every tick
+        ids.Clear();
+        ids.AddRange(_stuns.Keys);
         foreach (int id in ids)
         {
             Stun stun = _stuns[id];

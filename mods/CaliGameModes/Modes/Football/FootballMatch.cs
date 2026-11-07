@@ -53,7 +53,22 @@ internal sealed class FootballMatch : MonoUpdatable, IRespawnMatch
     {
     }
 
-    private void Awake() => Updater.RegisterUpdatable(this);
+    private void Awake()
+    {
+        Updater.RegisterUpdatable(this);
+        useGUILayout = false; // only GUI.Label: skips IMGUI's layout pass
+    }
+
+    // Visuals: each goal's last measured size and since when it's been that size.
+    private Vector2[] _goalSizes;
+    private float[] _goalStableSince;
+
+    /// <summary>A goal sprite is (re)drawn for a size only once it stops changing (the level animates in).</summary>
+    private const float GoalStableTime = 0.25f;
+
+    // Visuals: texts rebuilt only when they change.
+    private int _shownScore0 = -1, _shownScore1 = -1, _shownSeconds = -1, _shownScorer = -1;
+    private string _scoreText, _scorePlain, _timeText, _goalText;
 
     private void OnDestroy()
     {
@@ -240,45 +255,78 @@ internal sealed class FootballMatch : MonoUpdatable, IRespawnMatch
             return renderer;
         }).ToArray();
 
+        _goalSizes ??= new Vector2[_goals.Length];
+        _goalStableSince ??= new float[_goals.Length];
         for (int i = 0; i < _goals.Length; i++)
         {
             FootballGoal goal = _goals[i];
-            _goalRenderers[i].enabled = goal.Valid;
+            SpriteRenderer renderer = _goalRenderers[i];
+            renderer.enabled = goal.Valid;
             if (!goal.Valid)
                 continue;
             Rect rect = goal.WorldRect;
-            _goalRenderers[i].sprite = FootballSprites.Goal(rect.width, rect.height, goal.Side == 1);
-            _goalRenderers[i].transform.position = new Vector3(rect.x, rect.y, 0.5f);
+            if ((rect.size - _goalSizes[i]).sqrMagnitude > 0.0001f)
+            {
+                _goalSizes[i] = rect.size;
+                _goalStableSince[i] = Time.time;
+            }
+            // While the size changes, the current sprite is stretched instead of drawing a new texture every frame.
+            if (renderer.sprite == null || Time.time - _goalStableSince[i] >= GoalStableTime)
+                renderer.sprite = FootballSprites.Goal(rect.width, rect.height, goal.Side == 1);
+            Vector2 drawn = renderer.sprite.bounds.size;
+            renderer.transform.localScale = new Vector3(
+                drawn.x > 0f ? rect.width / drawn.x : 1f, drawn.y > 0f ? rect.height / drawn.y : 1f, 1f);
+            renderer.transform.position = new Vector3(rect.x, rect.y, 0.5f);
         }
     }
 
     private void OnGUI()
     {
+        // Drawn once per frame (other events have nothing to do here).
+        if (Event.current.type != EventType.Repaint)
+            return;
         _scoreStyle ??= new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold, richText = true };
         _smallStyle ??= new GUIStyle(_scoreStyle) { fontStyle = FontStyle.Normal };
         _scoreStyle.fontSize = Mathf.Max(24, Screen.height / 14);
         _smallStyle.fontSize = Mathf.Max(14, Screen.height / 36);
 
         float y = Screen.height * 0.02f;
-        string score = $"<color=#{Hex(_sideColors[0])}>{_scores[0]}</color>  -  <color=#{Hex(_sideColors[1])}>{_scores[1]}</color>";
-        Shadowed(new Rect(0, y, Screen.width, _scoreStyle.fontSize * 1.4f), score, _scoreStyle);
+        if (_scoreText == null || _shownScore0 != _scores[0] || _shownScore1 != _scores[1])
+        {
+            _shownScore0 = _scores[0];
+            _shownScore1 = _scores[1];
+            _scoreText = $"<color=#{Hex(_sideColors[0])}>{_scores[0]}</color>  -  <color=#{Hex(_sideColors[1])}>{_scores[1]}</color>";
+            _scorePlain = $"{_scores[0]}  -  {_scores[1]}";
+        }
+        Shadowed(new Rect(0, y, Screen.width, _scoreStyle.fontSize * 1.4f), _scoreText, _scorePlain, _scoreStyle);
         y += _scoreStyle.fontSize * 1.3f;
 
         int limit = FootballMode.TimeLimit.ActiveInt;
         if (limit > 0)
         {
             int left = Mathf.Max(0, Mathf.CeilToInt(limit - (float)_clock));
-            Shadowed(new Rect(0, y, Screen.width, _smallStyle.fontSize * 1.5f), $"{left / 60}:{left % 60:00}", _smallStyle);
+            if (_timeText == null || _shownSeconds != left)
+            {
+                _shownSeconds = left;
+                _timeText = $"{left / 60}:{left % 60:00}";
+            }
+            Shadowed(new Rect(0, y, Screen.width, _smallStyle.fontSize * 1.5f), _timeText, _timeText, _smallStyle);
             y += _smallStyle.fontSize * 1.4f;
         }
 
         if (Time.unscaledTime < _goalBannerUntil)
-            Shadowed(new Rect(0, y, Screen.width, _scoreStyle.fontSize * 1.4f), $"<color=#{Hex(_sideColors[_lastScorer])}>GOAL!</color>", _scoreStyle);
+        {
+            if (_goalText == null || _shownScorer != _lastScorer)
+            {
+                _shownScorer = _lastScorer;
+                _goalText = $"<color=#{Hex(_sideColors[_lastScorer])}>GOAL!</color>";
+            }
+            Shadowed(new Rect(0, y, Screen.width, _scoreStyle.fontSize * 1.4f), _goalText, "GOAL!", _scoreStyle);
+        }
     }
 
-    private static void Shadowed(Rect rect, string text, GUIStyle style)
+    private static void Shadowed(Rect rect, string text, string plain, GUIStyle style)
     {
-        string plain = System.Text.RegularExpressions.Regex.Replace(text, "<.*?>", "");
         Color old = GUI.color;
         GUI.color = new Color(0f, 0f, 0f, 0.7f);
         GUI.Label(new Rect(rect.x + 3f, rect.y + 3f, rect.width, rect.height), plain, style);

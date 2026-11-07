@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -316,7 +317,7 @@ public class ChargeAbility : AbilityMonoBehaviour
 
     /// <summary>Other players' active bodies, in an order that's the same on every machine.</summary>
     private static List<PlayerCollision> Players(int owner) =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.body != null && b.GetPlayerId() != owner &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&
                         (b.GetComponent<SlimeController>() is not SlimeController s || s.hasSpawned))
@@ -327,12 +328,9 @@ public class ChargeAbility : AbilityMonoBehaviour
 
     /// <summary>Flying bodies (projectiles, items), same filter as the Fan's.</summary>
     private static List<BoplBody> Bodies() =>
-        FindObjectsOfType<BoplBody>()
+        SceneScan.All<BoplBody>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.HasBeenInitialized &&
-                        b.GetComponent<PlayerCollision>() == null && b.GetComponent<AbilityMonoBehaviour>() == null &&
-                        b.GetComponent<StickyRoundedRectangle>() == null && b.GetComponent<FlammableSmoke>() == null &&
-                        b.GetComponent<BlackHole>() == null &&
-                        (b.GetComponent<Grenade>() is not Grenade g || g.hasBeenThrown))
+                        SceneScan.IsFlyingBody(b, skipPlatformsAndSmoke: true))
             .OrderBy(b => b.HierarchyNumber)
             .ToList();
 

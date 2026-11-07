@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2
+- Performance: Rotation mode's knock tracking is removed again in rounds without Rotation mode (it slowed every later round down), and finds who owns what once per object instead of every tick; the Rotation and Football scoreboards are rebuilt only when they change; the football goals are no longer redrawn every frame while the level animates in.
+- Rotation mode: a slime that comes back is invulnerable for 1 second once its revive animation ends.
+- Needs CustomRules 1.0.3 and CaliSkills 1.5.3.
+
 ## 1.1.1
 - Rotation mode: every ability you use up is gone for you and replaced by a new one, until you've used them all. Nobody dies: a kill gives the killer a point and the slime comes back at the spawn point farthest from the others. Dying to the water, the edge of the map or your own attack within 5 s of being knocked by someone gives them the point; a suicide with nobody to blame gives a point to every player of the other teams. The round ends only when every player has used every ability; the highest score wins (in teams, the team's total). Scores at the top of the screen. While it's on, Abilities max use, Destroy ability on max use, Reroll on max use and Infinite round duration are locked on, Max use amount can't be 0, and Revival is banned. Can't be on with Football mode.
 - Needs CustomRules 1.0.2.

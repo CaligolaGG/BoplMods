@@ -37,19 +37,50 @@ internal static class RuleProfiles
         get
         {
             string name = _activeEntry?.Value;
-            return !string.IsNullOrEmpty(name) && Exists(name) ? name : null;
+            if (string.IsNullOrEmpty(name))
+                return null;
+            // The rules window asks on every GUI event: the file check is redone twice a second (or after a change).
+            if (name != _checkedName || UnityEngine.Time.unscaledTime >= _checkedUntil)
+            {
+                _checkedName = name;
+                _checkedExists = Exists(name);
+                _checkedUntil = UnityEngine.Time.unscaledTime + 0.5f;
+            }
+            return _checkedExists ? name : null;
         }
-        private set => _activeEntry.Value = value ?? "";
+        private set
+        {
+            _activeEntry.Value = value ?? "";
+            FilesChanged();
+        }
     }
 
+    private static string _checkedName;
+    private static bool _checkedExists;
+    private static float _checkedUntil, _listedUntil;
+    private static List<string> _listed;
+
+    /// <summary>A profile file was written, renamed or deleted: the cached checks look again.</summary>
+    private static void FilesChanged()
+    {
+        _checkedName = null;
+        _listed = null;
+    }
+
+    /// <summary>The saved profiles (a copy; the folder is read at most twice a second, or after a change).</summary>
     internal static List<string> List()
     {
-        if (!Directory.Exists(Folder))
-            return new List<string>();
-        return Directory.GetFiles(Folder, "*" + Extension)
-            .Select(Path.GetFileNameWithoutExtension)
-            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        if (_listed == null || UnityEngine.Time.unscaledTime >= _listedUntil)
+        {
+            _listed = !Directory.Exists(Folder)
+                ? new List<string>()
+                : Directory.GetFiles(Folder, "*" + Extension)
+                    .Select(Path.GetFileNameWithoutExtension)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            _listedUntil = UnityEngine.Time.unscaledTime + 0.5f;
+        }
+        return new List<string>(_listed);
     }
 
     /// <summary>A usable profile name (file-name safe), or null if nothing is left of it.</summary>
@@ -93,6 +124,7 @@ internal static class RuleProfiles
     internal static void Rename(string oldName, string newName)
     {
         File.Move(PathOf(oldName), PathOf(newName));
+        FilesChanged();
         if (string.Equals(_activeEntry.Value, oldName, StringComparison.OrdinalIgnoreCase))
             Active = newName;
     }
@@ -101,6 +133,7 @@ internal static class RuleProfiles
     internal static void Delete(string name)
     {
         File.Delete(PathOf(name));
+        FilesChanged();
         if (string.Equals(_activeEntry.Value, name, StringComparison.OrdinalIgnoreCase))
         {
             Active = null;
@@ -145,6 +178,7 @@ internal static class RuleProfiles
         foreach (KeyValuePair<string, string> pair in values)
             text.Append(pair.Key).Append('=').Append(pair.Value).Append('\n');
         File.WriteAllText(path, text.ToString());
+        FilesChanged();
     }
 
     private static Dictionary<string, string> Read(string path)

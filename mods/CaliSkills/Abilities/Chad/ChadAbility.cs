@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -645,24 +646,21 @@ public class ChadAbility : AbilityMonoBehaviour
 
     /// <summary>Flying bodies (projectiles, items), in an order that's the same on every machine (the Bat's filter).</summary>
     private static List<BoplBody> Bodies() =>
-        FindObjectsOfType<BoplBody>()
+        SceneScan.All<BoplBody>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.HasBeenInitialized &&
-                        b.GetComponent<PlayerCollision>() == null && b.GetComponent<AbilityMonoBehaviour>() == null &&
-                        b.GetComponent<StickyRoundedRectangle>() == null && b.GetComponent<FlammableSmoke>() == null &&
-                        b.GetComponent<BlackHole>() == null &&
-                        (b.GetComponent<Grenade>() is not Grenade g || g.hasBeenThrown))
+                        SceneScan.IsFlyingBody(b, skipPlatformsAndSmoke: true))
             .OrderBy(b => b.HierarchyNumber)
             .ToList();
 
     private static List<FlammableSmoke> Smokes() =>
-        FindObjectsOfType<FlammableSmoke>()
+        SceneScan.All<FlammableSmoke>()
             .Where(s => !s.IsDestroyed && s.gameObject.activeInHierarchy && s.fixTrans != null)
             .OrderBy(s => s.fixTrans.position.x.m_rawValue)
             .ThenBy(s => s.fixTrans.position.y.m_rawValue)
             .ToList();
 
     private static List<BlackHole> BlackHoles() =>
-        FindObjectsOfType<BlackHole>()
+        SceneScan.All<BlackHole>()
             .Where(h => !h.IsDestroyed && h.gameObject.activeInHierarchy && h.dCircle != null)
             .OrderBy(h => h.dCircle.position.x.m_rawValue)
             .ThenBy(h => h.dCircle.position.y.m_rawValue)
@@ -670,7 +668,7 @@ public class ChadAbility : AbilityMonoBehaviour
 
     /// <summary>Other players' active bodies, in an order that's the same on every machine.</summary>
     private static List<PlayerCollision> Players(int owner) =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.body != null && b.GetPlayerId() != owner &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&
                         (b.GetComponent<SlimeController>() is not SlimeController s || s.hasSpawned))

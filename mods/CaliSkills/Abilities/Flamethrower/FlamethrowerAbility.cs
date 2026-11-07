@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -232,9 +233,9 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         RopeBody rope = _caster.body.ropeBody;
         if (rope == null || !rope.enabled || !rope.hookHasArrived || rope.hasBeenDettached)
             return false;
-        foreach (RopeAttachment attachment in FindObjectsOfType<RopeAttachment>())
+        foreach (RopeAttachment attachment in SceneScan.All<RopeAttachment>())
         {
-            if (attachment.IsDestroyed || attachment.GetInitializedRopeBody() != rope || !attachment.IsPlatformAttachment() ||
+            if (attachment == null || attachment.IsDestroyed || !attachment.gameObject.activeInHierarchy || attachment.GetInitializedRopeBody() != rope || !attachment.IsPlatformAttachment() ||
                 attachment.topAttachment == _caster.body.topAttachment)
                 continue;
             platform = attachment.GetPlatformParent();
@@ -305,7 +306,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
 
     /// <summary>Other players' active bodies (slimes and ability forms), in an order that's the same on every machine.</summary>
     internal static List<PlayerCollision> Players(int owner) =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => b.gameObject.activeInHierarchy && b.body != null && b.GetPlayerId() != owner &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&
                         (b.GetComponent<SlimeController>() is not SlimeController s || s.hasSpawned))
@@ -315,14 +316,14 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
             .ToList();
 
     private static List<FlammableSmoke> Smokes() =>
-        FindObjectsOfType<FlammableSmoke>()
+        SceneScan.All<FlammableSmoke>()
             .Where(s => !s.IsDestroyed && s.gameObject.activeInHierarchy && s.fixTrans != null)
             .OrderBy(s => s.fixTrans.position.x.m_rawValue)
             .ThenBy(s => s.fixTrans.position.y.m_rawValue)
             .ToList();
 
     private static List<Mine> Mines() =>
-        FindObjectsOfType<Mine>()
+        SceneScan.All<Mine>()
             .Where(m => !m.IsDestroyed && m.gameObject.activeInHierarchy && m.body != null)
             .OrderBy(m => m.body.HierarchyNumber)
             .ToList();

@@ -21,7 +21,7 @@ Two teams, two goals, one ball. Players who spawn on the left play against those
 ### Rotation mode
 Use every ability, score the most kills.
 - Every ability can be used a limited number of times (**Max use amount** under Abilities max use, default 2, at least 1 in this mode). Once used up it's gone for you for the rest of the round, and the slot gets a new random ability (starting on cooldown) that you haven't used up yet. When none is left, the slot stays empty.
-- **Nobody dies**: a slime that would die comes back at the spawn point farthest from the other slimes, and whoever killed it gets a point (none for killing a teammate).
+- **Nobody dies**: a slime that would die comes back at the spawn point farthest from the other slimes, and whoever killed it gets a point (none for killing a teammate). It's invulnerable for 1 second after it comes back.
 - **Knocked out**: if you die to the water, the edge of the map or your own attack within 5 seconds of being knocked around by someone (Push, an explosion, a pinball, a black hole...), they get the point.
 - **Suicide**: if you kill yourself with nobody to blame, every player of the other teams gets a point.
 - The round ends **only when every player has used up every ability**. The highest score wins the round (in team games, the team with the highest total). The scores are shown at the top of the screen, with how many players still have abilities.

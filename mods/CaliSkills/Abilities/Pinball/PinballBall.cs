@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using BoplFixedMath;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CaliSkills.Abilities.Pinball;

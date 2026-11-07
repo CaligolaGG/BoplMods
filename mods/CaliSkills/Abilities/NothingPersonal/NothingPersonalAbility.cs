@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -194,7 +195,7 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
 
     /// <summary>Active bodies of alive players, in an order that's the same on every machine.</summary>
     private static IEnumerable<PlayerCollision> Bodies() =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => b.gameObject.activeInHierarchy && b.body != null && !b.IsInvulnerable &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive)
             .OrderBy(b => b.GetPlayerId())
@@ -258,8 +259,16 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
     // Needs someone to teleport behind, and not already on the way.
     public override bool IsCastable(Player player) => !_travelling && OtherPlayerAlive(player);
 
-    private static bool OtherPlayerAlive(Player player) =>
-        PlayerHandler.Get().PlayerList().Any(p => p != null && p != player && p.IsAlive);
+    // Asked several times per frame all match long: a plain loop, no LINQ garbage.
+    private static bool OtherPlayerAlive(Player player)
+    {
+        foreach (Player p in PlayerHandler.Get().PlayerList())
+        {
+            if (p != null && p != player && p.IsAlive)
+                return true;
+        }
+        return false;
+    }
 
     public override void UpdateCooldowns(PlayerBody playerBody)
     {

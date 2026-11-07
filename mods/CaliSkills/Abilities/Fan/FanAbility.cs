@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -367,7 +368,7 @@ public class FanAbility : AbilityMonoBehaviour
 
     /// <summary>Other players' active bodies, in an order that's the same on every machine.</summary>
     private static List<PlayerCollision> Players(int owner) =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => b.gameObject.activeInHierarchy && b.body != null && b.GetPlayerId() != owner &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&
                         (b.GetComponent<SlimeController>() is not SlimeController s || s.hasSpawned))
@@ -381,17 +382,14 @@ public class FanAbility : AbilityMonoBehaviour
     /// black holes or items still in a hand.
     /// </summary>
     private static List<BoplBody> Bodies() =>
-        FindObjectsOfType<BoplBody>()
+        SceneScan.All<BoplBody>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.HasBeenInitialized &&
-                        b.GetComponent<PlayerCollision>() == null && b.GetComponent<AbilityMonoBehaviour>() == null &&
-                        b.GetComponent<StickyRoundedRectangle>() == null && b.GetComponent<FlammableSmoke>() == null &&
-                        b.GetComponent<BlackHole>() == null &&
-                        (b.GetComponent<Grenade>() is not Grenade g || g.hasBeenThrown))
+                        SceneScan.IsFlyingBody(b, skipPlatformsAndSmoke: true))
             .OrderBy(b => b.HierarchyNumber)
             .ToList();
 
     private static List<StickyRoundedRectangle> Platforms() =>
-        FindObjectsOfType<StickyRoundedRectangle>()
+        SceneScan.All<StickyRoundedRectangle>()
             .Where(p => !p.IsDestroyed && p.gameObject.activeInHierarchy)
             .OrderBy(p => p.transform.GetSiblingIndex())
             .ThenBy(p => p.GetComponent<FixTransform>() is FixTransform t ? t.position.x.m_rawValue : 0L)
@@ -399,7 +397,7 @@ public class FanAbility : AbilityMonoBehaviour
             .ToList();
 
     private static List<FlammableSmoke> Smokes() =>
-        FindObjectsOfType<FlammableSmoke>()
+        SceneScan.All<FlammableSmoke>()
             .Where(s => !s.IsDestroyed && s.gameObject.activeInHierarchy && s.fixTrans != null)
             .OrderBy(s => s.fixTrans.position.x.m_rawValue)
             .ThenBy(s => s.fixTrans.position.y.m_rawValue)

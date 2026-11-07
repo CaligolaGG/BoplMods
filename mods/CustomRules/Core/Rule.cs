@@ -128,7 +128,14 @@ public sealed class Rule
 
     internal string DefaultText => Format(DefaultValue);
 
-    internal void SetLocal(object value) => Entry.BoxedValue = value;
+    internal void SetLocal(object value)
+    {
+        Entry.BoxedValue = value;
+        LocalVersion++;
+    }
+
+    /// <summary>Bumped whenever a local value is set through <see cref="SetLocal"/>.</summary>
+    internal static int LocalVersion { get; private set; }
 
     /// <summary>Sets the active value from its text (from this machine or the host). Invalid text = default.</summary>
     internal void SetActive(string text)
@@ -146,7 +153,11 @@ public sealed class Rule
             _ => 0f,
         };
         ActiveFix = (Fix)ActiveFloat;
+        ActiveVersion++;
     }
+
+    /// <summary>Bumped whenever any rule's active value is set: lets hot code cache what it derives from them.</summary>
+    internal static int ActiveVersion { get; private set; }
 
     /// <summary>Parses and clamps to [Min, Max].</summary>
     internal bool TryParse(string text, out object value)

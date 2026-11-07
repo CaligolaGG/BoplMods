@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+- Abilities max use: the Grappling hook works again. A use is firing the hook; pulling yourself in on its rope no longer counts as another use, still works once the hook is used up, and the hook isn't rerolled or lost while its rope is still out (you were left hanging on a rope you couldn't pull, e.g. in Rotation mode right after firing).
+- Performance: ability cooldowns and stats cost nothing during matches unless the host changed them (they were looked up several times per player every game tick); the Custom rules button no longer runs outside the lobby; the lobby works out the greyed-out / marked abilities once per frame instead of once per icon; Player bouncing no longer searches the whole scene for slimes every tick; the Profiles tab no longer reads the profile folder on every click or redraw.
+
 ## 1.0.2
 - For game mode mods: rules can be locked by another rule (greyed out in the menu, "locked by ..." shown, and forced when the match starts), a rule can raise another rule's lowest value while it's on, a rule can ban abilities while it's on, and a rule can be exclusive with several others.
 - Player bouncing: new "Player bounce ×" setting for how hard slimes bounce off each other (default 2, stronger than before); "Bounce power ×" is now only for platforms. A slime big enough to eat another isn't bounced away from it anymore, so eating works again.

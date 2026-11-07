@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System.Collections.Generic;
 using System.Linq;
 using BoplFixedMath;
@@ -109,7 +110,7 @@ public class PotionBurst : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
             return;
 
         FixTransform other = collision.colliderPP.fixTrans;
-        if (collision.layer == LayerMask.NameToLayer("Player"))
+        if (collision.layer == Layers.Player)
         {
             IPlayerIdHolder idHolder = other != null ? other.GetComponent<IPlayerIdHolder>() : null;
             if (idHolder == null)
@@ -121,20 +122,20 @@ public class PotionBurst : MonoUpdatable, IGrenadeDetonation, ICollisionCallback
                 return;
             Detonate();
         }
-        else if (collision.layer == LayerMask.NameToLayer("Projectile"))
+        else if (collision.layer == Layers.Projectile)
         {
             Projectile projectile = other != null ? other.GetComponent<Projectile>() : null;
             if (projectile != null && projectile.IgnitesExplosives)
                 Detonate();
         }
-        else if (collision.layer == LayerMask.NameToLayer("Explosion"))
+        else if (collision.layer == Layers.Explosion)
         {
             Detonate();
         }
         else if (other != null && (other.GetComponent<StickyRoundedRectangle>() != null ||
-                                   collision.layer == LayerMask.NameToLayer("wall") ||
-                                   collision.layer == LayerMask.NameToLayer("NonLethalTerrain") ||
-                                   collision.layer == LayerMask.NameToLayer("LethalTerrain")))
+                                   collision.layer == Layers.Wall ||
+                                   collision.layer == Layers.NonLethalTerrain ||
+                                   collision.layer == Layers.LethalTerrain))
         {
             // A platform or wall (not while a Magnet gun carries it along), once armed: thrown from the floor, it touches
             // that floor at once.

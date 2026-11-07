@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System.Collections.Generic;
 using BoplFixedMath;
 using HarmonyLib;
@@ -142,7 +143,7 @@ internal static class ChadMirror
         start = Vec2.zero;
         reflected = Vec2.zero;
         chadId = -1;
-        if (_rayDepth >= MaxRayBounces || ChadAbility.ShiningByPlayer.Count == 0 || hit.layer != LayerMask.NameToLayer("Player") ||
+        if (_rayDepth >= MaxRayBounces || ChadAbility.ShiningByPlayer.Count == 0 || hit.layer != Layers.Player ||
             hit.pp.fixTrans == null)
             return false;
         SlimeController slime = hit.pp.fixTrans.GetComponent<SlimeController>();

@@ -94,14 +94,28 @@ internal sealed class PlayerBouncer : MonoUpdatable
 {
     private void Awake() => Updater.RegisterUpdatable(this);
 
+    /// <summary>The slimes, collected as they register with the Updater (spawn).</summary>
+    private static readonly List<SlimeController> Slimes = new();
+
+    [HarmonyPatch(typeof(Updater), nameof(Updater.RegisterUpdatable))]
+    private static class CollectSlimes
+    {
+        private static void Postfix(MonoUpdatable updatable)
+        {
+            if (updatable is SlimeController slime && !Slimes.Contains(slime))
+                Slimes.Add(slime);
+        }
+    }
+
     public override void Init()
     {
     }
 
     public override void UpdateSim(Fix simDeltaTime)
     {
-        // FindObjectsOfType's order isn't guaranteed to match between machines: sort.
-        List<SlimeController> slimes = FindObjectsOfType<SlimeController>()
+        // Every slime ever spawned (no scene search every tick); the order isn't the same on every machine: sort.
+        Slimes.RemoveAll(s => s == null);
+        List<SlimeController> slimes = Slimes
             .Where(IsBouncy)
             .OrderBy(s => s.playerNumber)
             .ThenBy(s => s.body.position.x.m_rawValue)

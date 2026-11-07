@@ -1,3 +1,4 @@
+using CaliSkills.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -348,17 +349,15 @@ public class BatAbility : AbilityMonoBehaviour
     /// players' ability forms, black holes or items still held in a hand (a grenade before it's thrown).
     /// </summary>
     private static List<BoplBody> Projectiles() =>
-        FindObjectsOfType<BoplBody>()
+        SceneScan.All<BoplBody>()
             .Where(b => !b.IsDestroyed && b.gameObject.activeInHierarchy && b.HasBeenInitialized &&
-                        b.GetComponent<PlayerCollision>() == null && b.GetComponent<AbilityMonoBehaviour>() == null &&
-                        b.GetComponent<BlackHole>() == null &&
-                        (b.GetComponent<Grenade>() is not Grenade g || g.hasBeenThrown))
+                        SceneScan.IsFlyingBody(b, skipPlatformsAndSmoke: false))
             .OrderBy(b => b.HierarchyNumber)
             .ToList();
 
     /// <summary>Other players' active bodies, in an order that's the same on every machine.</summary>
     private List<PlayerCollision> Targets() =>
-        FindObjectsOfType<PlayerCollision>()
+        SceneScan.All<PlayerCollision>()
             .Where(b => b.gameObject.activeInHierarchy && b.body != null && !b.IsInvulnerable && b.GetPlayerId() != _player.Id &&
                         PlayerHandler.Get().GetPlayer(b.GetPlayerId()) is Player p && p.IsAlive &&
                         (b.GetComponent<SlimeController>() is not SlimeController s || s.hasSpawned))

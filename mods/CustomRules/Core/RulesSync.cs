@@ -45,6 +45,30 @@ internal static class RulesSync
 
     internal static bool LobbyBool(Rule rule) => LobbyText(rule) == bool.TrueString;
 
+    private static int _lobbyVersion, _stampFrame = -1, _stampLocal = -1;
+    private static object _stampHost;
+
+    /// <summary>
+    /// Changes when the lobby values may have changed: every frame, and within a frame when a local value is set or the
+    /// host's values arrive. Lobby UI asks for the same values for every ability icon every frame: it caches them
+    /// until this changes.
+    /// </summary>
+    internal static int LobbyVersion
+    {
+        get
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (frame != _stampFrame || Rule.LocalVersion != _stampLocal || !ReferenceEquals(_hostValues, _stampHost))
+            {
+                _stampFrame = frame;
+                _stampLocal = Rule.LocalVersion;
+                _stampHost = _hostValues;
+                _lobbyVersion++;
+            }
+            return _lobbyVersion;
+        }
+    }
+
     internal static bool IsOnlineClient =>
         GameLobby.isOnlineGame && SteamManager.instance != null && !SteamManager.LocalPlayerIsLobbyOwner;
 

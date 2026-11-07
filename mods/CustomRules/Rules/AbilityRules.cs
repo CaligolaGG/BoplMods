@@ -85,8 +85,18 @@ internal static class AbilityRules
         return candidates;
     }
 
-    private static bool IsRandom(NamedSprite entry) =>
-        entry.associatedGameObject != null && entry.associatedGameObject.GetComponent<RandomAbility>() != null;
+    private static readonly Dictionary<GameObject, bool> RandomPrefabs = new();
+
+    /// <summary>Cached per prefab: asked for every ability icon every frame in the lobby.</summary>
+    private static bool IsRandom(NamedSprite entry)
+    {
+        GameObject prefab = entry.associatedGameObject;
+        if (prefab == null)
+            return false;
+        if (!RandomPrefabs.TryGetValue(prefab, out bool random))
+            RandomPrefabs[prefab] = random = prefab.GetComponent<RandomAbility>() != null;
+        return random;
+    }
 
     /// <summary>
     /// Whether the rules allow this ability: not disabled, and passing the offensive filter. Random passes the filter
@@ -124,9 +134,50 @@ internal static class AbilityRules
     }
 
     // In character select: the rules as set in the lobby (the host's for online guests), not yet active.
-    internal static bool LobbyNoOffensive => RulesSync.LobbyBool(NoOffensive);
-    internal static bool LobbyOnlyOffensive => RulesSync.LobbyBool(OnlyOffensive);
-    internal static HashSet<string> LobbyDisabled => ParseNames(WithBans(RulesSync.LobbyText(Disabled), RulesSync.LobbyText));
+    // Asked for every ability icon every frame: computed once per RulesSync.LobbyVersion.
+    private static int _lobbyVersion = -1;
+    private static bool _lobbyNoOffensive, _lobbyOnlyOffensive;
+    private static HashSet<string> _lobbyDisabled = new();
+
+    private static void RefreshLobby()
+    {
+        int version = RulesSync.LobbyVersion;
+        if (version == _lobbyVersion)
+            return;
+        _lobbyVersion = version;
+        _lobbyNoOffensive = RulesSync.LobbyBool(NoOffensive);
+        _lobbyOnlyOffensive = RulesSync.LobbyBool(OnlyOffensive);
+        string disabled = WithBans(RulesSync.LobbyText(Disabled), RulesSync.LobbyText);
+        _lobbyDisabled = new HashSet<string>((disabled ?? "").Split('|').Where(n => n.Length > 0));
+    }
+
+    internal static bool LobbyNoOffensive
+    {
+        get
+        {
+            RefreshLobby();
+            return _lobbyNoOffensive;
+        }
+    }
+
+    internal static bool LobbyOnlyOffensive
+    {
+        get
+        {
+            RefreshLobby();
+            return _lobbyOnlyOffensive;
+        }
+    }
+
+    internal static HashSet<string> LobbyDisabled
+    {
+        get
+        {
+            RefreshLobby();
+            return _lobbyDisabled;
+        }
+    }
+
     internal static bool LobbyFilterActive => LobbyNoOffensive || LobbyOnlyOffensive || LobbyDisabled.Count > 0;
 
     private static string _parsedText;
