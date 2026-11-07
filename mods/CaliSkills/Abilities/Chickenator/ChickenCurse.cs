@@ -240,4 +240,11 @@ internal sealed class ChickenCurse : MonoUpdatable
                 __result = false;
         }
     }
+
+    /// <summary>Chickens can't eat other players either (they only move and jump).</summary>
+    [HarmonyPatch(typeof(SlimeController), nameof(SlimeController.Bite))]
+    private static class NoEating
+    {
+        private static bool Prefix(SlimeController __instance) => !IsChicken(__instance);
+    }
 }

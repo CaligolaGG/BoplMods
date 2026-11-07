@@ -1,3 +1,4 @@
+using BoplFixedMath;
 using UnityEngine;
 
 namespace CaliSkills.Abilities.Flamethrower;
@@ -95,7 +96,8 @@ public class FlamethrowerVisuals : MonoBehaviour
         float length = (float)_ability.Length;
         float half = (float)_ability.HalfAngle * Mathf.Rad2Deg;
         float muzzleAlong = Vector2.Dot(muzzle - center, dir);
-        const float life = 0.42f;
+        // Flying at length / FlameTravelTime (slowed a little by drag): the sim's cone bends at the same pace.
+        const float life = FlamethrowerAbility.FlameTravelTime * 1.05f;
         _emit += Time.deltaTime * FlameRate;
         while (_emit >= 1f)
         {
@@ -105,7 +107,7 @@ public class FlamethrowerVisuals : MonoBehaviour
             Vector2 way = Quaternion.Euler(0f, 0f, offset) * dir;
             float reach = Reach(offset / Mathf.Max(half, 0.01f)) - Mathf.Max(0f, muzzleAlong);
             float travel = Mathf.Max(0f, length - Mathf.Max(0f, muzzleAlong));
-            float speed = travel / (life * 0.8f) * Random.Range(0.85f, 1.1f);
+            float speed = travel / (FlamethrowerAbility.FlameTravelTime * 0.8f) * Random.Range(0.85f, 1.1f);
             Vector2 start = muzzle + way * Random.Range(0f, 0.3f);
             FlameParticles.Emit(FlameParticles.Kind.Flame, start, way * speed, life * Random.Range(0.85f, 1.1f),
                 length * Random.Range(0.13f, 0.19f), slimeRen, Mathf.Max(0f, reach));
@@ -158,8 +160,17 @@ public class FlamethrowerVisuals : MonoBehaviour
     {
         if (!Core.Hitboxes.Enabled)
             return;
-        Core.Hitboxes.Sector((Vector2)_ability.Origin, (Vector2)_ability.Direction, (float)_ability.Length,
-            (float)_ability.HalfAngle * 2f * Mathf.Rad2Deg, slimeRen);
+        // The cone bends after a turn: drawn as nested sectors, each in the direction of the flames at its end.
+        const int bands = 6;
+        float length = (float)_ability.Length;
+        float angle = (float)_ability.HalfAngle * 2f * Mathf.Rad2Deg;
+        for (int i = 1; i <= bands; i++)
+        {
+            float reach = length * i / bands;
+            if (!_ability.FlameDirection((Fix)reach, out Vec2 dir))
+                break;
+            Core.Hitboxes.Sector((Vector2)_ability.Origin, (Vector2)dir, reach, angle, slimeRen);
+        }
     }
 
     /// <summary>The flamethrower sound, at the game's sound effects volume, looping while it fires.</summary>

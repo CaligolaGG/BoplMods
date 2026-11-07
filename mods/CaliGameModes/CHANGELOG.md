@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+- Rotation mode: the respawn invulnerability is now always taken off the slime that got it (a player with Duplicator copies could keep it on another one).
+- Needs CaliSkills 1.5.4 (fixes slimes that could stay invulnerable or stuck after a respawn or a Nothing Personal Kid teleport).
+
 ## 1.1.2
 - Performance: Rotation mode's knock tracking is removed again in rounds without Rotation mode (it slowed every later round down), and finds who owns what once per object instead of every tick; the Rotation and Football scoreboards are rebuilt only when they change; the football goals are no longer redrawn every frame while the level animates in.
 - Rotation mode: a slime that comes back is invulnerable for 1 second once its revive animation ends.

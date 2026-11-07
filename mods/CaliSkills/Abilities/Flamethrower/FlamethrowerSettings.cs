@@ -10,17 +10,17 @@ namespace CaliSkills.Abilities.Flamethrower;
 internal static class FlamethrowerSettings
 {
     [Description("Seconds before the flamethrower can be used again, counted from when it stops (not on space maps).")]
-    public static float AbilityCooldown = 3f;
+    public static float AbilityCooldown = 3.5f;
 
     [Description("Cooldown on space maps, in seconds.")]
     public static float SpaceCooldown = 1.5f;
 
     [Description("Longest the flamethrower fires while you hold the button; releasing it stops it earlier.")]
-    public static float MaxDuration = 2.5f;
+    public static float MaxDuration = 2f;
 
     [Category("Flames")]
     [Description("How far the flames reach, from the slime's center (units, scales with your size).")]
-    public static float FlameLength = 12f;
+    public static float FlameLength = 9f;
 
     [Category("Flames")]
     [Description("How wide the cone of flames opens, in degrees.")]
@@ -88,7 +88,7 @@ internal static class FlamethrowerSettings
 
     [Category("Jetpack (space maps)")]
     [Description("Share by which the cone of flames is smaller on space maps (0.3 = 30% shorter and narrower).")]
-    public static float SpaceConeShrink = 0.3f;
+    public static float SpaceConeShrink = 0.4f;
 
     [Category("Jetpack (space maps)")]
     [Description("Push on you, away from where you aim, on space maps: speed added every second, in units per second.")]

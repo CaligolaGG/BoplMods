@@ -9,8 +9,10 @@ namespace CaliSkills.Abilities.Rps;
 /// Rock Paper Scissors: an instant ability (the slime stays a slime).
 /// - Pressed and held: a yellow circle (<see cref="RpsSettings.CircleRadius"/>) shows around the slime, which moves
 ///   freely. The cooldown waits (its timer is pinned to 0 until the release).
-/// - Released: the closest enemy slime touching the circle is challenged to a duel (<see cref="RpsDuel"/>); nobody in
-///   it = nothing happens (the cooldown starts anyway).
+/// - Released: the closest enemy slime touching the circle is challenged to a duel (<see cref="RpsDuel"/>). With nobody
+///   who can duel in it (e.g. the enemy is in an ability form for a moment, or briefly invulnerable), the circle stays
+///   up for <see cref="ReleaseGrace"/> and challenges the first one who can; then nothing happens (the cooldown starts
+///   anyway). Why a release found nobody is logged.
 /// Sim code: inputs and Fix math only, slimes in a fixed order. The circle is a visual drawn from the sim state.
 /// </summary>
 public class RpsAbility : AbilityMonoBehaviour
@@ -19,6 +21,12 @@ public class RpsAbility : AbilityMonoBehaviour
     private Player _player;
     private int _slot = -1;
     private bool _holding;
+
+    /// <summary>After the release, how long the circle keeps looking for someone to challenge.</summary>
+    private static readonly Fix ReleaseGrace = (Fix)0.2f;
+
+    /// <summary>Time left to find someone after the release (&gt; 0 = released, still looking).</summary>
+    private Fix _graceLeft;
 
     private SpriteRenderer _circle;
 
@@ -52,6 +60,7 @@ public class RpsAbility : AbilityMonoBehaviour
         if (_caster == null || _player == null || _holding)
             return;
         _holding = true;
+        _graceLeft = Fix.Zero;
         AudioManager.Get()?.Play("abilityPickup");
     }
 
@@ -69,12 +78,58 @@ public class RpsAbility : AbilityMonoBehaviour
         if (_slot >= 0 && _slot < _caster.abilityCooldownTimers.Length)
             _caster.abilityCooldownTimers[_slot] = Fix.Zero;
 
-        if (_player.AbilityButtonIsDown(_slot))
+        bool released = _graceLeft > Fix.Zero;
+        if (!released && _player.AbilityButtonIsDown(_slot))
             return;
-        _holding = false;
-        SlimeController target = Target();
+        if (!released)
+            _graceLeft = ReleaseGrace;
+
+        SlimeController target = RpsDuel.CanDuel(_caster) ? Target() : null;
         if (target != null)
+        {
+            _holding = false;
+            _graceLeft = Fix.Zero;
             RpsDuel.Begin(_caster, target);
+            return;
+        }
+        if (!released)
+            LogNoTarget();
+        _graceLeft -= GameTime.FixedDeltaTime(_player.Id, simDeltaTime);
+        if (_graceLeft <= Fix.Zero)
+        {
+            _holding = false;
+            _graceLeft = Fix.Zero;
+        }
+    }
+
+    /// <summary>Logs why nobody was challenged on release (each enemy slime near the circle and what kept it out).</summary>
+    private void LogNoTarget()
+    {
+        var reasons = new System.Collections.Generic.List<string>();
+        if (!RpsDuel.CanDuel(_caster))
+            reasons.Add($"caster can't duel (spawned {_caster.hasSpawned}, in ability {_caster.isInAbility}, invulnerable {_caster.playerCollision?.IsInvulnerable})");
+        Vec2 center = _caster.body.position;
+        foreach (PlayerCollision body in FindObjectsOfType<PlayerCollision>())
+        {
+            if (body == null || body.GetPlayerId() == _player.Id || body.body == null)
+                continue;
+            Fix reach = Radius + (body.physics != null ? body.physics.radius : Fix.Zero);
+            Fix distance = Vec2.Magnitude(body.body.position - center);
+            if (distance > reach * (Fix)1.5f)
+                continue;
+            SlimeController slime = body.GetComponent<SlimeController>();
+            Player p = PlayerHandler.Get().GetPlayer(body.GetPlayerId());
+            string what = slime == null ? "ability form" :
+                p == null ? "no player" :
+                p.Team == _player.Team ? "teammate" :
+                !slime.hasSpawned ? "still spawning" :
+                slime.isInAbility ? "in an ability" :
+                body.IsInvulnerable ? "invulnerable" :
+                !p.IsAlive ? "not alive" :
+                distance > reach ? "just outside the circle" : "ok?";
+            reasons.Add($"P{body.GetPlayerId()} at {(float)distance:0.0}/{(float)reach:0.0}: {what}");
+        }
+        Plugin.Log.LogInfo("RPS: released with nobody to challenge yet" + (reasons.Count > 0 ? ": " + string.Join("; ", reasons) : " (no enemy near)."));
     }
 
     private bool CasterUsable() =>
@@ -128,7 +183,6 @@ public class RpsAbility : AbilityMonoBehaviour
     public override bool IsInstant() => true;
 
     public override bool IsCastable(Player player) => !_holding && RpsDuel.Current == null;
-
     public override void UpdateCooldowns(PlayerBody playerBody)
     {
     }

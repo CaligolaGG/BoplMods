@@ -38,6 +38,7 @@ internal sealed class RotationMatch : MonoUpdatable, IRespawnMatch
 
     /// <summary>Respawn invulnerability left per player id (sorted: same order on every machine).</summary>
     private readonly SortedDictionary<int, Fix> _immune = new();
+    private readonly Dictionary<int, SlimeController> _immuneSlime = new();
     private readonly List<int> _immuneIds = new();
 
     private readonly Dictionary<int, int> _scores = new();
@@ -164,6 +165,7 @@ internal sealed class RotationMatch : MonoUpdatable, IRespawnMatch
             return;
         slime.playerCollision.SetInvulnerable(true, ImmunityMask);
         _immune[slime.playerNumber] = RespawnImmunity;
+        _immuneSlime[slime.playerNumber] = slime;
     }
 
     private void UpdateImmunity(Fix simDeltaTime)
@@ -175,19 +177,17 @@ internal sealed class RotationMatch : MonoUpdatable, IRespawnMatch
         foreach (int id in _immuneIds)
         {
             Fix left = _immune[id] - simDeltaTime;
-            SlimeController slime = null;
-            foreach (SlimeController s in _session.slimeControllers)
-            {
-                if (s != null && !s.IsDestroyed && s.playerNumber == id)
-                    slime = s;
-            }
-            if (left > Fix.Zero && slime != null)
+            SlimeController slime = _immuneSlime[id];
+            bool present = slime != null && !slime.IsDestroyed;
+            if (left > Fix.Zero && present)
             {
                 _immune[id] = left;
                 continue;
             }
             _immune.Remove(id);
-            slime?.playerCollision.SetInvulnerable(false, ImmunityMask);
+            _immuneSlime.Remove(id);
+            if (present)
+                slime.playerCollision.SetInvulnerable(false, ImmunityMask);
         }
     }
 

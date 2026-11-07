@@ -16,6 +16,9 @@ namespace CaliSkills.Abilities.NothingPersonal;
 /// - <see cref="NothingPersonalSettings.TravelTime"/> later it appears at the marker (which followed the target), facing
 ///   the target, then stays immune and untouchable like after a respawn (PlayerCollision invulnerability + hurtbox off)
 ///   and can't use other abilities for a moment (<see cref="AbilityLockPatch"/>).
+/// - The cooldown starts once all of that is over (its timer is pinned to 0 meanwhile), so Abilities max use doesn't
+///   reroll / destroy the ability in the middle of it; if the object goes anyway, <see cref="OnDestroy"/> gives the
+///   slime back (visible, moving, not immune). A caster killed on the way (into its revive) is left to the revive.
 /// Sim code: decisions use simulated state and Fix math only; the marker, beam and smoke are visuals.
 /// Skill vs ability: this class is the behaviour in a match (one copy per player per round, run by the game's
 /// simulation); its definition (name, icon, prefab, offensive flag) is <see cref="NothingPersonalSkill"/>.
@@ -30,6 +33,7 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
 
     private bool _travelling;
     private bool _inputWasSuppressed;
+    private int _slot = -1;
     private int _targetId = -1;
     private Fix _travelLeft;
     private Fix _immunityLeft;
@@ -56,6 +60,7 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
         gameObject.SetActive(true);
         _caster = playerInfo.slimeController;
         _player = PlayerHandler.Get().GetPlayer(playerInfo.playerId);
+        _slot = playerInfo.AbilityButtonUsedIndex012;
         if (_caster == null || _player == null || _travelling)
             return;
 
@@ -72,6 +77,12 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
     public override void UpdateSim(Fix simDeltaTime)
     {
         Fix dt = _player != null ? GameTime.FixedDeltaTime(_player.Id, simDeltaTime) : simDeltaTime;
+
+        // The cooldown starts once the teleport, the immunity and the lock are over.
+        if ((_travelling || _immunityLeft > Fix.Zero || _lockLeft > Fix.Zero) && _caster != null && !_caster.IsDestroyed &&
+            _slot >= 0 && _slot < _caster.abilityCooldownTimers.Length && _slot < _caster.abilities.Count &&
+            _caster.abilities[_slot] == this)
+            _caster.abilityCooldownTimers[_slot] = Fix.Zero;
 
         if (_travelling)
         {
@@ -139,6 +150,13 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
         DestroyMarker();
         if (_caster == null || _caster.IsDestroyed)
             return;
+        // Killed on the way and now in its revive animation: that brings the slime back (and protects it) itself.
+        if (!_caster.hasSpawned)
+        {
+            SetImmune(false);
+            _immunityLeft = Fix.Zero;
+            return;
+        }
 
         PlayerBody body = _caster.body;
         PlayerCollision target = TargetBody(_targetId) ?? FurthestTarget(_caster);
@@ -171,7 +189,8 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
         if (_caster == null || _caster.IsDestroyed)
             return;
         _caster.playerCollision?.SetInvulnerable(immune, ImmunityMask);
-        if (_caster.hurtBox is MonoBehaviour hurtBox && hurtBox != null)
+        // A revive animation keeps the hurtbox off until it ends (Spawn turns it back on).
+        if (_caster.hurtBox is MonoBehaviour hurtBox && hurtBox != null && (immune || _caster.hasSpawned))
             hurtBox.enabled = !immune;
     }
 
@@ -246,7 +265,33 @@ public class NothingPersonalAbility : AbilityMonoBehaviour
         _marker = null;
     }
 
-    private void OnDestroy() => DestroyMarker();
+    /// <summary>
+    /// The ability object is gone (destroyed by the sim, e.g. rerolled, or with the level): a teleport or immunity in
+    /// progress mustn't stay on the slime forever.
+    /// </summary>
+    private void OnDestroy()
+    {
+        DestroyMarker();
+        if (_caster == null || _caster.IsDestroyed)
+            return;
+        if (_travelling)
+        {
+            _travelling = false;
+            if (_caster.hasSpawned)
+            {
+                _caster.playerPhysics.enabled = true;
+                _caster.body.simulated = true;
+                _caster.suppressInput = _inputWasSuppressed;
+                if (_caster.spriteRen != null)
+                    _caster.spriteRen.enabled = true;
+            }
+        }
+        _immunityLeft = Fix.Zero;
+        // Our own bit only; the hurtbox stays off while a revive animation runs (Spawn turns it on).
+        _caster.playerCollision?.SetInvulnerable(false, ImmunityMask);
+        if (_caster.hasSpawned && _caster.hurtBox is MonoBehaviour hurtBox && hurtBox != null)
+            hurtBox.enabled = true;
+    }
 
     public override void ExitAbility(AbilityExitInfo info)
     {

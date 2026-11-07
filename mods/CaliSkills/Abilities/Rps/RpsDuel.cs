@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BoplFixedMath;
+using CaliSkills.Core;
 using HarmonyLib;
 using UnityEngine;
 
@@ -10,7 +11,8 @@ namespace CaliSkills.Abilities.Rps;
 /// - Time stops for everyone, like the Time stop ability (same global time scale and shader effect, its sphere), and
 ///   the two duelists are frozen too: their slimes don't update (<see cref="FreezeDuelists"/>), their bodies aren't
 ///   simulated, and they can't die (<see cref="NoDeathInDuel"/>). They stay protected from the time stop only so the
-///   game keeps reading their inputs.
+///   game keeps reading their inputs, so everything else of theirs is frozen by hand too: their other slimes (Duplicator
+///   copies), ability forms, abilities in use, projectiles, items and mines (<see cref="FreezeOwned"/>).
 /// - <see cref="RpsSettings.VsDuration"/>: the VS screen. Then <see cref="RpsSettings.ChoiceTime"/>: their ability
 ///   buttons are rock / paper / scissors (the last press counts; none = random). Then the picks are shown
 ///   (<see cref="RpsSettings.RevealTime"/>), time starts again and the loser is squashed (killed by the winner). A draw
@@ -51,6 +53,12 @@ internal sealed class RpsDuel : MonoUpdatable
     private readonly Dictionary<Player, bool> _savedProtection = new();
     private float _savedShader;
     private bool _ended;
+
+    /// <summary>The duelist players' slimes frozen so far (copies included), unfrozen at the end.</summary>
+    private readonly HashSet<SlimeController> _frozen = new();
+
+    /// <summary>Owner player id of each updatable asked about during this duel (-1 = nobody's).</summary>
+    private readonly Dictionary<MonoUpdatable, int> _owners = new();
     private RpsScreen _screen;
 
     /// <summary>A slime that can take part in a duel right now.</summary>
@@ -93,8 +101,7 @@ internal sealed class RpsDuel : MonoUpdatable
         StopTime();
         Shader.SetGlobalFloat("_Timestop01", 0f);
 
-        Freeze(challenger, true);
-        Freeze(challenged, true);
+        FreezeSlimes();
 
         if (RpsSkill.TimeStopSound != null)
             AudioManager.Get()?.Play(RpsSkill.TimeStopSound);
@@ -108,6 +115,39 @@ internal sealed class RpsDuel : MonoUpdatable
         int a = Challenger.GetPlayerId(), b = Challenged.GetPlayerId();
         foreach (Player player in PlayerHandler.Get().PlayerList())
             player.isProtectedFromTimeStop = player.Id == a || player.Id == b;
+    }
+
+    /// <summary>Every slime of the two duelist players (the duelists and their Duplicator copies) is frozen.</summary>
+    private void FreezeSlimes()
+    {
+        foreach (SlimeController slime in SceneScan.All<SlimeController>())
+        {
+            if (slime != null && !slime.IsDestroyed && IsDuelist(slime.playerNumber) && _frozen.Add(slime))
+                Freeze(slime, true);
+        }
+    }
+
+    /// <summary>
+    /// The player owning <paramref name="updatable"/>: an ability (form or in use) → the slime using it; a projectile,
+    /// mine or anything else holding a player id; an item (grenade...) → its owner. -1 for nobody's.
+    /// </summary>
+    private int OwnerOf(MonoUpdatable updatable)
+    {
+        if (_owners.TryGetValue(updatable, out int owner))
+            return owner;
+        owner = -1;
+        if (updatable is AbilityMonoBehaviour ability && ability.GetSlimeController() is SlimeController slime && slime != null)
+            owner = slime.playerNumber;
+        else if (updatable is IPlayerIdHolder holder)
+            owner = holder.GetPlayerId();
+        else if (updatable.GetComponent<Ability>() is Ability form && form != null)
+            owner = form.GetPlayerId();
+        else if (updatable.GetComponent<Item>() is Item item && item != null)
+            owner = item.OwnerId;
+        else if (updatable.GetComponent<IPlayerIdHolder>() is IPlayerIdHolder parentHolder)
+            owner = parentHolder.GetPlayerId();
+        _owners[updatable] = owner;
+        return owner;
     }
 
     /// <summary>Body out of the simulation (no movement, gravity or physics updates); the slime itself is skipped by the patch.</summary>
@@ -139,6 +179,7 @@ internal sealed class RpsDuel : MonoUpdatable
         }
 
         StopTime();
+        FreezeSlimes();
         AudioManager.Get()?.FadeOutMusicTick(0.2f);
         Elapsed += simDeltaTime;
 
@@ -213,8 +254,10 @@ internal sealed class RpsDuel : MonoUpdatable
         foreach (KeyValuePair<Player, bool> saved in _savedProtection)
             saved.Key.isProtectedFromTimeStop = saved.Value;
         Shader.SetGlobalFloat("_Timestop01", _savedShader);
-        Freeze(Challenger, false);
-        Freeze(Challenged, false);
+        foreach (SlimeController slime in _frozen)
+            Freeze(slime, false);
+        _frozen.Clear();
+        _owners.Clear();
         _screen?.Finish();
 
         if (resolve)
@@ -249,11 +292,37 @@ internal sealed class RpsDuel : MonoUpdatable
         _screen?.Finish();
     }
 
-    /// <summary>The duelists' slimes don't update at all during the duel (no input, abilities, cooldowns, movement).</summary>
+    /// <summary>
+    /// The duelist players' slimes (copies included) don't update at all during the duel (no input, abilities,
+    /// cooldowns, movement).
+    /// </summary>
     [HarmonyPatch(typeof(SlimeController), nameof(SlimeController.UpdateSim))]
     private static class FreezeDuelists
     {
-        private static bool Prefix(SlimeController __instance) => Current == null || !Current.IsDuelist(__instance);
+        private static bool Prefix(SlimeController __instance) => Current == null || !Current.IsDuelist(__instance.playerNumber);
+    }
+
+    /// <summary>
+    /// Everything else of the duelist players stands still too (their time isn't stopped, to keep their inputs coming):
+    /// the Updater skips their ability forms, abilities in use, projectiles, items and mines while the duel runs.
+    /// </summary>
+    [HarmonyPatch]
+    private static class FreezeOwned
+    {
+        private static IEnumerable<System.Reflection.MethodBase> TargetMethods()
+        {
+            yield return AccessTools.Method(typeof(MonoUpdatable), nameof(MonoUpdatable.IsEnabled));
+            yield return AccessTools.Method(typeof(PlayerBody), nameof(PlayerBody.IsEnabled));
+        }
+
+        private static void Postfix(MonoUpdatable __instance, ref bool __result)
+        {
+            RpsDuel duel = Current;
+            if (!__result || duel == null || duel._ended || __instance is RpsDuel)
+                return;
+            if (duel.IsDuelist(duel.OwnerOf(__instance)))
+                __result = false;
+        }
     }
 
     /// <summary>

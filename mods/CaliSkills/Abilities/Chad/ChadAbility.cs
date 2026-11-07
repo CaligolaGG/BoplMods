@@ -330,6 +330,12 @@ public class ChadAbility : AbilityMonoBehaviour
 
     private void OnDestroy()
     {
+        // Destroyed mid-move or while shining (e.g. rerolled by Abilities max use once the mode is over and the aura
+        // still runs): the slime gets its controls, gravity and vulnerability back.
+        if (CurrentMove != Move.None)
+            EndMove();
+        if (_auraLeft > Fix.Zero)
+            EndAura();
         if (_caster != null)
         {
             Active.Remove(_caster);

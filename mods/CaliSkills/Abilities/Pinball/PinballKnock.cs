@@ -8,6 +8,12 @@ internal static class PinballKnock
 {
     internal static void Apply(GameObject victim, PlayerBody victimBody, Vec2 impulse, PinballTuning tuning)
     {
+        // A slime still in its spawn / revive animation is left alone: a ragdoll cancels that animation, which ends by
+        // calling Spawn(), so the slime would stay stuck in it and invulnerable for the rest of the round.
+        SlimeController spawning = victim.GetComponent<SlimeController>();
+        if (spawning != null && !spawning.hasSpawned)
+            return;
+
         // Slimes stick to any side of a platform (floor, wall, ceiling). Detach first, and make sure the knock
         // points away from that surface: otherwise the landing raycast re-attaches them on the next tick.
         PlayerPhysics physics = victim.GetComponent<PlayerPhysics>();

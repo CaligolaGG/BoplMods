@@ -15,7 +15,10 @@ namespace CaliSkills.Abilities.Flamethrower;
 ///   The cone starts at the slime's center, <see cref="FlamethrowerSettings.FlameLength"/> long and
 ///   <see cref="FlamethrowerSettings.FlameAngle"/> wide, and platforms stop it.
 /// - Every other player whose body touches the cone, with no platform in between, dies (slimes and ability forms).
-///   Smoke clouds in it are set off, and mines in it blow up.
+///   Smoke clouds in it are set off, and mines in it blow up. The flames take <see cref="FlameTravelTime"/> to reach
+///   the end of the cone, so the cone bends like them when turning: something at a distance d is checked against the
+///   direction the flames had d / length × FlameTravelTime ago (<see cref="FlameDirection"/>), and nothing is hit
+///   beyond where the first flames have got to yet.
 /// - Platforms the flames reach, depending on the map: normal maps → they catch fire where hit
 ///   (<see cref="PlatformFire"/>; not on space maps); ice maps → they melt, shrinking while hit and growing back later (<see cref="IceMelt"/>).
 /// - Space maps: the cone is <see cref="FlamethrowerSettings.SpaceConeShrink"/> smaller and the flames push the slime
@@ -28,6 +31,14 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
 {
     /// <summary>Rays cast across the cone each tick to find the platforms it reaches.</summary>
     internal const int RayCount = 9;
+
+    /// <summary>Seconds the flames take to reach the end of the cone (the visuals' flames fly at this pace).</summary>
+    internal const float FlameTravelTime = 0.4f;
+
+    private const int HistorySize = 64;
+    private readonly Fix[] _historyTime = new Fix[HistorySize];
+    private readonly Vec2[] _historyDir = new Vec2[HistorySize];
+    private int _historyCount, _historyLast;
 
     private SlimeController _caster;
     private Player _player;
@@ -71,6 +82,8 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         Direction = _caster.isFacingRight() ? Vec2.right : Vec2.left;
         Aim();
         _time = Fix.Zero;
+        _historyCount = 0;
+        Record();
         Firing = true;
         GetComponent<FlamethrowerVisuals>()?.OnStart();
     }
@@ -92,6 +105,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         Fix dt = GameTime.FixedDeltaTime(_player.Id, simDeltaTime);
         _time += dt;
         Aim();
+        Record();
         Burn(dt);
         if (_time >= (Fix)FlamethrowerSettings.MaxDuration)
             Stop();
@@ -112,6 +126,48 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         Vec2 aim = _player.AimVector();
         if (Vec2.Magnitude(aim) > Constants.DEADZONE)
             Direction = Vec2.NormalizedSafe(aim);
+    }
+
+    /// <summary>Remembers this tick's direction (a tick with no time passing, e.g. time stop, replaces the last one).</summary>
+    private void Record()
+    {
+        if (_historyCount == 0 || _time > _historyTime[_historyLast])
+        {
+            _historyLast = (_historyLast + 1) % HistorySize;
+            _historyCount = Math.Min(_historyCount + 1, HistorySize);
+        }
+        _historyTime[_historyLast] = _time;
+        _historyDir[_historyLast] = Direction;
+    }
+
+    /// <summary>
+    /// The direction of the flames that are now <paramref name="distance"/> from the apex: the aim they were fired with,
+    /// distance / length × <see cref="FlameTravelTime"/> ago. False when no flame has got that far yet.
+    /// </summary>
+    internal bool FlameDirection(Fix distance, out Vec2 direction)
+    {
+        direction = Direction;
+        Fix length = Length;
+        Fix lag = length > Fix.Zero ? Fix.Clamp(distance / length, Fix.Zero, Fix.One) * (Fix)FlameTravelTime : Fix.Zero;
+        Fix at = _time - lag;
+        for (int n = 0; n < _historyCount; n++)
+        {
+            int i = (_historyLast - n + HistorySize) % HistorySize;
+            if (_historyTime[i] <= at)
+            {
+                direction = _historyDir[i];
+                return true;
+            }
+        }
+        return lag <= Fix.Zero;
+    }
+
+    /// <summary>Whether a circle at <paramref name="position"/> touches the flames, as they bend after a turn.</summary>
+    private bool InFlames(Vec2 position, Fix radius, Vec2 origin, Fix length, Fix cosHalf)
+    {
+        Vec2 offset = position - origin;
+        Fix near = Fix.Max(Vec2.Magnitude(offset) - radius, Fix.Zero);
+        return FlameDirection(near, out Vec2 dir) && InCone(offset, dir, length, cosHalf, radius);
     }
 
     // --- The cone ---
@@ -146,6 +202,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         int owner = _player.Id;
         Vec2 origin = Origin;
         Fix length = Length;
+        Fix cosHalf = Fix.Cos(HalfAngle);
 
         // Platforms the flames reach, ray by ray.
         for (int i = 0; i < RayCount; i++)
@@ -158,6 +215,9 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
                 continue;
             }
             RayReach[i] = Fix.Max(hit.nearDist, Fix.Zero);
+            // Burns only once the flames get there (after a turn they're still on their way).
+            if (!InFlames(hit.nearPos, Fix.Zero, origin, length, cosHalf))
+                continue;
             StickyRoundedRectangle platform = hit.pp.fixTrans != null ? hit.pp.fixTrans.GetComponent<StickyRoundedRectangle>() : null;
             if (platform == null || platform.IsDestroyed)
                 continue;
@@ -168,12 +228,11 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
         }
 
         // Players in the flames die (one kill per player per tick; Duplicator clones are separate bodies).
-        Fix cosHalf = Fix.Cos(HalfAngle);
         foreach (PlayerCollision target in Players(owner))
         {
             Fix radius = target.physics != null ? target.physics.radius : Fix.Zero;
             Vec2 position = target.body.position;
-            if (!InCone(position - origin, Direction, length, cosHalf, radius) || !InLineOfSight(origin, position, radius))
+            if (!InFlames(position, radius, origin, length, cosHalf) || !InLineOfSight(origin, position, radius))
                 continue;
             target.killPlayer(owner, spawnEffect: true, ignoreInvulnerability: false, CauseOfDeath.Other);
         }
@@ -184,7 +243,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
             foreach (FlammableSmoke smoke in Smokes())
             {
                 Fix radius = smoke.circleCollider != null ? smoke.circleCollider.radius : Fix.Zero;
-                if (smoke.timeSinceDetonated < Fix.Zero && InCone(smoke.fixTrans.position - origin, Direction, length, cosHalf, radius))
+                if (smoke.timeSinceDetonated < Fix.Zero && InFlames(smoke.fixTrans.position, radius, origin, length, cosHalf))
                     smoke.Ignite();
             }
         }
@@ -196,7 +255,7 @@ public class FlamethrowerAbility : AbilityMonoBehaviour
             {
                 Vec2 position = mine.body.position;
                 Fix radius = mine.GetComponent<DPhysicsCircle>() is DPhysicsCircle circle ? circle.radius : (Fix)0.5f;
-                if (!mine.IsDestroyed && InCone(position - origin, Direction, length, cosHalf, radius) && InLineOfSight(origin, position, radius))
+                if (!mine.IsDestroyed && InFlames(position, radius, origin, length, cosHalf) && InLineOfSight(origin, position, radius))
                     mine.Detonate();
             }
         }

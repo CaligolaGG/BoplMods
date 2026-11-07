@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.4
+- Flamethrower: the flames' hitbox now follows the flames you see. They take 0.4 s to reach the end of the cone, so when you turn (even a 180°) the far part of the cone catches up with the flames instead of jumping there at once, and right after you start firing it only reaches as far as the flames have got. Show hitboxes draws the bent cone.
+- Rock Paper Scissors: a release that finds nobody to challenge keeps the circle up for 0.2 s more and challenges the first enemy who can duel (e.g. one coming out of an ability form). Why a release found nobody is written to the log (BepInEx LogOutput.log, lines starting with "RPS:").
+- Rock Paper Scissors: during a duel, everything of the two duelists is frozen too: their Duplicator copies, ability forms, abilities in use, projectiles, items and mines.
+- Chickenator: chickens can't eat other players anymore.
+- Nothing Personal Kid: it no longer leaves the slime invulnerable (or hidden and stuck) for the rest of the round when the ability is rerolled or destroyed by Abilities max use right after a teleport; its cooldown now starts after the teleport and the immunity. Killed on the way, the slime is left to its revive.
+- Chad mode: rerolled or destroyed while the aura is still shining, the slime is no longer invulnerable for the rest of the round.
+- Pinball and Charge no longer knock a slime that's still in its spawn / revive animation (that froze it there, invulnerable).
+
 ## 1.5.3
 - Performance: less garbage every frame after a Fan, Omae wa mo shindeiru, Chad mode, Charge or Chickenator was used in a round; Nothing Personal Kid and the Pinball / Chickenator / Chad mode collision checks allocate nothing anymore; while in use, Fan, Chad mode, Flamethrower (and burning platforms), Wooden Bat, Charge and Nothing Personal Kid share one scene search per tick instead of each searching the whole scene several times per tick.
 
